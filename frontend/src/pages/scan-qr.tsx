@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import withAuth from '@/components/withAuth';
@@ -9,18 +9,10 @@ import {
     evm,
     credential,
     credType,
-    babyzk,
     babyzkTypes,
+    babyzk,
   } from "@galxe-identity-protocol/sdk";
 import { ethers } from "ethers";
-
-// Use Cloudflare's free open RPC in this example.
-const MAINNET_RPC = "https://cloudflare-eth.com";
-const provider = new ethers.JsonRpcProvider(MAINNET_RPC);
-
-// This is a dummy issuer's EVM address that has been registered on mainnet.
-// Because it authorizes the private key that is public to everyone, it should not be used in production!
-const dummyIssuerEvmAddr = "0x15f4a32c40152a0f48E61B7aed455702D1Ea725e";
 
 const ScanQRPage: React.FC = () => {
   const router = useRouter();
@@ -33,8 +25,10 @@ const ScanQRPage: React.FC = () => {
   useEffect(() => {
     return () => {
       if (qrScannerRef.current) {
-        qrScannerRef.current.stop();
+        qrScannerRef.current.destroy();
+        qrScannerRef.current = null;
       }
+      clearScannerOverlay();
     };
   }, []);
 
@@ -42,6 +36,15 @@ const ScanQRPage: React.FC = () => {
     console.log("Start scanning clicked");
     setError(null);
     setVerified(null);
+    
+    // Stop and destroy previous scanner if it exists
+    if (qrScannerRef.current) {
+      qrScannerRef.current.destroy();
+      qrScannerRef.current = null;
+    }
+    
+    clearScannerOverlay();
+  
     if (videoRef.current) {
       try {
         setIsScanning(true);
@@ -78,80 +81,77 @@ const ScanQRPage: React.FC = () => {
   const handleScan = async (scannedData: string) => {
     try {
       await prepare();
-      const proof = JSON.parse(scannedData);
-      const verificationResult = await verifyByOffchain(proof);
+      const proof: babyzkTypes.WholeProof = JSON.parse(scannedData);
+      console.log('Parsed Proof:', proof);
+      const verificationResult = await verifyProof(proof);
       setVerified(verificationResult);
     } catch (error) {
-      setError("Verification failed. Please try again.");
+      console.error('Error verifying proof:', error);
       setVerified(false);
+      setError('Failed to verify the QR code. Please try again.');
     }
   };
 
-  const verifyByOffchain = async (proof: babyzkTypes.WholeProof): Promise<boolean> => {
-    const expectedContextID = credential.computeContextID("Number of transactions");
-    const expectedIssuerID = BigInt(dummyIssuerEvmAddr);
-    const expectedTypeID = credType.primitiveTypes.scalar.type_id;
+  const verifyProof = async (proof: babyzkTypes.WholeProof): Promise<boolean> => {
+    try {
+      const provider = new ethers.JsonRpcProvider("https://cloudflare-eth.com");
+      const statefulVerifier = evm.v1.createBabyzkStatefulVerifier({
+        signerOrProvider: provider,
+      });
+  
+      const expectedTypeID = credType.primitiveTypes.unit.type_id;
+      const expectedContextID = babyzk.defaultPublicSignalGetter(credential.IntrinsicPublicSignal.Context, proof);
+      const expectedIssuerID = BigInt("0x15f4a32c40152a0f48E61B7aed455702D1Ea725e");
+  
+      if (expectedContextID === undefined) {
+        console.error('Context ID not found in the proof');
+        return false;
+      }
+  
+      console.log('Expected Type ID:', expectedTypeID.toString());
+      console.log('Expected Context ID:', expectedContextID.toString());
+      console.log('Expected Issuer ID:', expectedIssuerID.toString());
+  
+      const result = await statefulVerifier.verifyWholeProofFull(
+        expectedTypeID,
+        expectedContextID,
+        expectedIssuerID,
+        proof
+      );
+  
+      console.log('Verification Result:', evm.verifyResultToString(result));
+  
+      return result === evm.VerifyResult.OK;
+    } catch (error) {
+      console.error('Error in verifyProof:', error);
+      return false;
+    }
+  };
 
-    const tpRegistry = evm.v1.createTypeRegistry({
-      signerOrProvider: provider,
+  const clearScannerOverlay = () => {
+    const scannerElements = document.querySelectorAll('.qr-scanner-overlay, .qr-scanner-region-highlight-svg, canvas');
+    scannerElements.forEach(el => {
+      if (el instanceof HTMLElement) {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300); 
+      } else {
+        el.remove(); 
+      }
     });
-    const verifier = await tpRegistry.getVerifier(
-      expectedTypeID,
-      credential.VerificationStackEnum.BabyZK
-    );
-    const vKey = await verifier.getVerificationKeysRaw();
-    await babyzk.verifyProofRaw(vKey, proof);
-
-    const IssuerRegistry = evm.v1.createIssuerRegistry({
-      signerOrProvider: provider,
-    });
-    const pubkeyId = babyzk.defaultPublicSignalGetter(
-      credential.IntrinsicPublicSignal.KeyId,
-      proof
-    );
-    if (pubkeyId === undefined) {
-      return false;
-    }
-    const isActive = await IssuerRegistry.isPublicKeyActiveForStack(
-      expectedIssuerID,
-      pubkeyId,
-      credential.VerificationStackEnum.BabyZK
-    );
-    if (!isActive) {
-      return false;
-    }
-    const contextId = babyzk.defaultPublicSignalGetter(
-      credential.IntrinsicPublicSignal.Context,
-      proof
-    );
-    if (contextId === undefined) {
-      return false;
-    }
-    if (contextId !== expectedContextID) {
-      return false;
-    }
-    const expiredAtLb = babyzk.defaultPublicSignalGetter(
-      credential.IntrinsicPublicSignal.ExpirationLb,
-      proof
-    );
-    if (expiredAtLb === undefined) {
-      return false;
-    }
-    if (expiredAtLb < BigInt(Math.ceil(new Date().getTime() / 1000))) {
-      return false;
-    }
-    return true;
   };
 
   const handleGoBack = () => {
     if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
+      qrScannerRef.current.destroy();
+      qrScannerRef.current = null;
     }
+    clearScannerOverlay();
     router.push('/events');
   };
 
   return (
     <MainContainer>
+    <GlobalStyle />
       <Card>
         <Header>
           <GoBackButton onClick={handleGoBack}>
@@ -197,6 +197,21 @@ const MainContainer = styled.div`
   min-height: 100vh;
   padding: 20px;
   font-family: 'Inter', sans-serif;
+`;
+
+const GlobalStyle = createGlobalStyle`
+  @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  .qr-scanner-overlay, .qr-scanner-region-highlight-svg, canvas {
+    transition: opacity 0.3s ease-out;
+  }
+
+  .fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
+  }
 `;
 
 const Card = styled.div`
