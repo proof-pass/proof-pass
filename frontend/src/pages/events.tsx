@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { useRouter } from 'next/router';
 import EventCard from '@/components/Events/EventCard';
 import withAuth from '@/components/withAuth';
-import { DefaultApi, Event, Configuration, FetchAPI } from '@/api';
+import { DefaultApi, Event, Configuration, FetchAPI, TicketCredential } from '@/api';
 import { getToken } from '@/utils/auth'; 
 
 const EventsPage: React.FC = () => {
@@ -12,9 +12,8 @@ const EventsPage: React.FC = () => {
     const [eventList, setEventList] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    // Memoize the API instance with the auth token
-    // to prevent re-creating the API instance on every render
+    const [userCredentials, setUserCredentials] = useState<TicketCredential[]>([]);
+    const [credentialErrors, setCredentialErrors] = useState<Record<string, string>>({});
 
     const api = useMemo(() => {
         const token = getToken();
@@ -57,6 +56,19 @@ const EventsPage: React.FC = () => {
     }, [api]);
 
     useEffect(() => {
+        const fetchUserCredentials = async () => {
+            try {
+                const credentials = await api.userMeTicketCredentialsGet();
+                setUserCredentials(credentials);
+            } catch (error) {
+                console.error('Error fetching user credentials:', error);
+            }
+        };
+    
+        fetchUserCredentials();
+    }, [api]);
+
+    useEffect(() => {
         fetchEvents();
     }, [fetchEvents]);
 
@@ -74,13 +86,17 @@ const EventsPage: React.FC = () => {
         try {
             setIsLoading(true);
             
-            // Step 1: Request the ticket credential
+            const existingCredentials = await api.userMeTicketCredentialsGet();
+            const hasExistingCredential = existingCredentials.some(cred => cred.eventId === eventId);
+            
+            if (hasExistingCredential) {
+                return;
+            }
+            
             const ticketCredential = await api.eventsEventIdRequestTicketCredentialPost({
                 eventId: eventId
             });
-            console.log('Ticket credential requested successfully:', ticketCredential);
             
-            // Step 2: Store the ticket credential
             if (ticketCredential) {
                 await api.userMeTicketCredentialPut({
                     putTicketCredentialRequest: {
@@ -91,16 +107,18 @@ const EventsPage: React.FC = () => {
                         expireAt: ticketCredential.expireAt ?? new Date(),
                     }
                 });
-                console.log('Ticket credential stored successfully');
+
+                const credentials = await api.userMeTicketCredentialsGet();
+                setUserCredentials(credentials);
+                await fetchEvents();
+                
+                setCredentialErrors(prev => ({ ...prev, [eventId]: '' }));
             } else {
                 throw new Error('Failed to request ticket credential');
             }
-            
-            // Refresh the event list
-            await fetchEvents();
         } catch (error) {
             console.error('Error requesting or storing ticket credential:', error);
-            setError('Failed to request or store ticket credential. Please try again later.');
+            setCredentialErrors(prev => ({ ...prev, [eventId]: 'You haven\'t registered for this event.' }));
         } finally {
             setIsLoading(false);
         }
@@ -131,18 +149,27 @@ const EventsPage: React.FC = () => {
                     <ErrorMessage>{error}</ErrorMessage>
                 ) : eventList.length > 0 ? (
                     eventList.map((event) => (
-                        <EventCard
-                            key={event.id ?? ''}
-                            eventId={event.id ?? ''}
-                            eventName={event.name ?? ''}
-                            eventDate={new Date().toLocaleDateString()} 
-                            eventUrl={event.url ?? ''}
-                            eventDescription={event.description ?? ''}
-                            requestTicketCredentialsLabel="Request Credential"
-                            onClick={handleRequestTicketCredential}
-                            onScanQRCode={handleScanQRCode}
-                            fetchEventDetails={fetchEventDetails}
-                        />
+                        <React.Fragment key={event.id ?? ''}>
+                            <EventCard
+                                eventId={event.id ?? ''}
+                                eventName={event.name ?? ''}
+                                eventDate={new Date().toLocaleDateString()} 
+                                eventUrl={event.url ?? ''}
+                                eventDescription={event.description ?? ''}
+                                requestTicketCredentialsLabel={
+                                    userCredentials.some(cred => cred.eventId === event.id)
+                                        ? "Ticket Obtained"
+                                        : "Request Credential"
+                                }
+                                hasTicket={userCredentials.some(cred => cred.eventId === event.id)}
+                                onClick={handleRequestTicketCredential}
+                                onScanQRCode={handleScanQRCode}
+                                fetchEventDetails={fetchEventDetails}
+                            />
+                            {credentialErrors[event.id ?? ''] && (
+                                <ErrorMessage>{credentialErrors[event.id ?? '']}</ErrorMessage>
+                            )}
+                        </React.Fragment>
                     ))
                 ) : (
                     <NoEventsMessage>No events available.</NoEventsMessage>
@@ -202,18 +229,20 @@ const LoadingIndicator = styled.div`
     padding: 20px;
 `;
 
-const ErrorMessage = styled.div`
-    color: #ff6b6b;
-    font-size: 18px;
-    text-align: center;
-    padding: 20px;
-`;
-
 const NoEventsMessage = styled.div`
     color: #fff;
     font-size: 18px;
     text-align: center;
     padding: 20px;
+`;
+
+const ErrorMessage = styled.div`
+    color: #ff6b6b;
+    font-size: 14px;
+    text-align: center;
+    padding: 10px;
+    margin-top: -10px;
+    margin-bottom: 10px;
 `;
 
 export default withAuth(EventsPage);

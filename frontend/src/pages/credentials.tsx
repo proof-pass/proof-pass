@@ -12,16 +12,10 @@ import {
     credType,
     errors,
     user,
-    utils
+    utils,
+    issuer,
   } from "@galxe-identity-protocol/sdk";
 import { ethers } from "ethers";
-
-// conviniently unwrap the result of a function call by throwing an error if the result is an error.
-const unwrap = errors.unwrap;
-
-// Use cloudflare's free open rpc in this example.
-const MAINNET_RPC = "https://cloudflare-eth.com";
-const provider = new ethers.JsonRpcProvider(MAINNET_RPC);
 
 const CredentialsPage: React.FC = () => {
   const router = useRouter();
@@ -30,6 +24,7 @@ const CredentialsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [qrCodeValue, setQrCodeValue] = useState<string | null>(null);
+  const [isGeneratingProof, setIsGeneratingProof] = useState<boolean>(false);
 
   const api = useMemo(() => {
     const token = getToken();
@@ -76,115 +71,139 @@ const CredentialsPage: React.FC = () => {
     fetchTicketCredentials();
   }, [api]);
 
-  async function setupUser(api: DefaultApi): Promise<user.User | null> {
+  const handleGenerateProof = async (ticket: TicketCredential) => {
+    setIsGeneratingProof(true);
+    setError(null);
     try {
-        const userDetails = await api.userMeGet();
-
-        if (!userDetails.identityCommitment || !userDetails.encryptedIdentitySecret || !userDetails.encryptedInternalNullifier) {
-            console.error('User details are incomplete');
-            return null;
-        }
-
-        console.log('User Details:', userDetails);
-
-        const u = new user.User();
-        const reconstructedSlice: user.IdentitySlice = {
-            identitySecret: BigInt(userDetails.identityCommitment),
-            internalNullifier: BigInt(userDetails.encryptedInternalNullifier),
-        };
-
-        console.log('Reconstructed Slice:', reconstructedSlice);
-
-        u.addIdentitySlice(reconstructedSlice);
-        return u;
+      console.log('Generate proof for:', ticket);
+      const proofData = await generateProof(ticket, api);
+      setQrCodeValue(proofData);
     } catch (error) {
-        console.error('Error fetching user details:', error);
-        return null;
+      console.error('Error generating proof:', error);
+      setError('Failed to generate proof. Please try it again.');
+    } finally {
+      setIsGeneratingProof(false);
     }
-}
-
-
-const handleGenerateProof = async (ticket: TicketCredential) => {
-    try {
-        console.log('Generate proof for:', ticket);
-        const proofData = await generateProof(ticket, api);
-        setQrCodeValue(proofData);
-    } catch (error) {
-        console.error('Error generating proof:', error);
-        setError('Failed to generate proof. Please try logging in again.');
-    }
-};
-
+  };
+  
   const generateProof = async (ticket: TicketCredential, api: DefaultApi): Promise<string> => {
     try {
-        // Prepare the SDK
-        await prepare();
-
-        // Set up the user
-        const u = await setupUser(api);
-        if (!u) {
-            throw new Error('Failed to set up user. Please log in again.');
+      await prepare();
+  
+      const provider = new ethers.JsonRpcProvider("https://cloudflare-eth.com");
+  
+      const u = new user.User();
+      const userDetails = await api.userMeGet();
+      
+      if (!userDetails.encryptedIdentitySecret || !userDetails.encryptedInternalNullifier) {
+        throw new Error('User details are incomplete');
+      }
+  
+      const identitySlice: user.IdentitySlice = {
+        identitySecret: BigInt(userDetails.encryptedIdentitySecret),
+        internalNullifier: BigInt(userDetails.encryptedInternalNullifier),
+        domain: "evm"
+      };
+  
+      u.addIdentitySlice(identitySlice);
+      console.log('User set up successfully.');
+  
+      const identityCommitment = u.getIdentityCommitment("evm");
+      if (!identityCommitment) {
+        throw new Error('Failed to get identity commitment');
+      }
+      console.log('Identity commitment:', identityCommitment.toString());
+  
+      if (!ticket.data) {
+        throw new Error('Ticket data is missing');
+      }
+      const ticketData = JSON.parse(ticket.data);
+      console.log('Ticket data parsed:', ticketData);
+  
+      const unitTypeSpec = credType.primitiveTypes.unit;
+      const unitType = errors.unwrap(credType.createTypeFromSpec(unitTypeSpec));
+      console.log('Credential type created successfully.');
+  
+      // Use the context from the ticket data
+      const contextString = ticketData.header.context;
+      const contextID = credential.computeContextID(contextString);
+  
+      // Create a credential object from the ticket data
+      const cred = errors.unwrap(
+        credential.Credential.create(
+          {
+            type: unitType,
+            contextID: contextID,
+            userID: BigInt(ticketData.header.id),
+          },
+          {}  // Empty object for unit type
+        )
+      );
+      console.log('Credential object created successfully:', cred);
+  
+      // Add a signature to the credential
+      const dummyIssuerEvmAddr = "0x15f4a32c40152a0f48E61B7aed455702D1Ea725e";
+      const dummyKey = utils.decodeFromHex("0xfd60ceb442aca7f74d2e56c1f0e93507798e8a6e02c4cd1a5585a36167fa7b03");
+      const myIssuer = new issuer.BabyzkIssuer(dummyKey, BigInt(dummyIssuerEvmAddr), BigInt(1)); // mainnet
+      myIssuer.sign(cred, {
+        sigID: BigInt(100),
+        expiredAt: BigInt(Math.ceil(new Date().getTime() / 1000) + 7 * 24 * 60 * 60), // 7 days from now
+        identityCommitment: identityCommitment,
+      });
+      console.log('Signature added to the credential');
+  
+      // Set up proof generation parameters
+      const externalNullifier = utils.computeExternalNullifier(contextString);
+      const expiredAtLowerBound = BigInt(Math.ceil(new Date().getTime() / 1000) + 3 * 24 * 60 * 60);
+      const equalCheckId = BigInt(0);
+      const pseudonym = BigInt("0xdeadbeef");
+      console.log('Proof generation parameters set up successfully.');
+  
+      console.log("Downloading proof generation gadgets...");
+      const proofGenGadgets = await user.User.fetchProofGenGadgetsByTypeID(
+        cred.header.type,
+        provider
+      );
+      console.log("Proof generation gadgets downloaded successfully.");
+  
+      // Generate the proof using genBabyzkProofWithQuery
+      const proof = await u.genBabyzkProofWithQuery(
+        identityCommitment,
+        cred,
+        proofGenGadgets,
+        `
+        {
+          "conditions": [],
+          "options": {
+            "expiredAtLowerBound": "${expiredAtLowerBound}",
+            "externalNullifier": "${externalNullifier}",
+            "equalCheckId": "${equalCheckId}",
+            "pseudonym": "${pseudonym}"
+          }
         }
-
-        // Parse the ticket credential data
-        if (!ticket.data) {
-            throw new Error('Ticket data is missing');
-        }
-        const ticketData = JSON.parse(ticket.data);
-
-        // Create a credential type for the unit type
-        const unitTypeSpec = credType.primitiveTypes.unit;
-        const unitType = unwrap(credType.createTypeFromSpec(unitTypeSpec));
-
-        // Create a credential object from the ticket data
-        const cred = unwrap(
-            credential.Credential.create(
-                {
-                    type: unitType,
-                    contextID: credential.computeContextID(ticketData.header.context),
-                    userID: BigInt(ticketData.header.id),
-                },
-                {}  // Empty object for unit type
-            )
-        );
-
-        // Generate the proof using the set up user object
-        const proof = await proofGenProcess(cred, u);
-
-        // Convert the proof to a string for QR code generation
-        return JSON.stringify(proof);
+        `
+      );
+      console.log('Proof generated successfully.');
+  
+      console.log('Generating proof with the following parameters:');
+      console.log('Type ID:', cred.header.type.toString());
+      console.log('Context ID:', contextID.toString());
+      console.log('Context String:', contextString);
+      console.log('Issuer ID:', BigInt(dummyIssuerEvmAddr).toString());
+  
+      const proofString = JSON.stringify(proof);
+      console.log('Proof converted to string successfully.');
+  
+      return proofString;
     } catch (error) {
-        console.error('Error generating proof:', error);
-        throw new Error('Failed to generate proof');
+      console.error('Error generating proof:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      throw new Error('Failed to generate proof');
     }
-};
-
-  async function proofGenProcess(myCred: credential.Credential, u: user.User) {
-    const externalNullifier = utils.computeExternalNullifier(
-      "Galxe Identity Protocol tutorial's verification"
-    );
-    console.log("Downloading proof generation gadgets...");
-    const proofGenGadgets = await user.User.fetchProofGenGadgetsByTypeID(
-      myCred.header.type,
-      provider
-    );
-    console.log("Proof generation gadgets downloaded successfully.");
-    const proof = await u.genBabyzkProof(
-      u.getIdentityCommitment("evm")!,
-      myCred,
-      {
-        expiratedAtLowerBound: BigInt(
-          Math.ceil(new Date().getTime() / 1000) + 3 * 24 * 60 * 60
-        ),
-        externalNullifier: externalNullifier,
-        equalCheckId: BigInt(0),
-        pseudonym: BigInt("0xdeadbeef"),
-      },
-      proofGenGadgets,
-      []  // Empty array of statements for a unit credential
-    );
-    return proof;
-  }
+  };
 
   const handleDownloadQR = () => {
     const svg = document.getElementById('qr-code');
@@ -229,8 +248,12 @@ const handleGenerateProof = async (ticket: TicketCredential) => {
                   <p>Event: {eventNames[ticket.eventId ?? ''] ?? 'Unknown Event'}</p>
                   <p>Issued At: {new Date(ticket.issuedAt ?? '').toLocaleString()}</p>
                   <p>Expires At: {new Date(ticket.expireAt ?? '').toLocaleString()}</p>
-                  <GenerateProofButton onClick={() => handleGenerateProof(ticket)}>
-                    Generate Proof
+                  <GenerateProofButton 
+                    onClick={() => handleGenerateProof(ticket)} 
+                    loading={isGeneratingProof}
+                    disabled={isGeneratingProof}
+                  >
+                    {isGeneratingProof ? 'Generating...' : 'Generate Proof'}
                   </GenerateProofButton>
                   {qrCodeValue && (
                     <QRCodeContainer>
@@ -309,17 +332,6 @@ const CredentialTitle = styled.h2`
   margin-bottom: 16px;
 `;
 
-const CredentialItem = styled.div`
-  background-color: rgba(255, 255, 255, 0.1);
-  padding: 16px;
-  margin: 16px 0;
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-`;
-
 const QRCodeContainer = styled.div`
   display: flex;
   align-items: space-between;
@@ -367,12 +379,24 @@ const Button = styled.button`
   }
 `;
 
-const GenerateProofButton = styled(Button)`
-  background: linear-gradient(45deg, #4ecdc4, #45b7d8);
+const GenerateProofButton = styled(Button)<{ loading: boolean }>`
+  background: ${({ loading }) => (loading ? '#888' : 'linear-gradient(45deg, #4ecdc4, #45b7d8)')};
   color: white;
   padding: 8px 16px;
   font-size: 14px;
   margin-top: 8px;
+  cursor: ${({ loading }) => (loading ? 'not-allowed' : 'pointer')};
+`;
+
+const CredentialItem = styled.div`
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 16px;
+  margin: 16px 0;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 `;
 
 const LoadingIndicator = styled.div`

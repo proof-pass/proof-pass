@@ -10,4 +10,5 @@ export interface EventCardProps {
     onClick: (eventId: string) => void;
     onScanQRCode: (eventId: string, adminCode?: string) => void;
     fetchEventDetails: (eventId: string) => Promise<Event>;
+    hasTicket: boolean;
 }

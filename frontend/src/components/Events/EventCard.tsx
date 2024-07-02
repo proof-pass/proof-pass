@@ -12,6 +12,7 @@ const EventCard: React.FC<EventCardProps> = ({
     requestTicketCredentialsLabel,
     onClick,
     onScanQRCode,
+    hasTicket,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const [isHostLoggedIn, setIsHostLoggedIn] = useState(false);
@@ -63,11 +64,12 @@ const EventCard: React.FC<EventCardProps> = ({
                 </EventUrl>
                 <EventDescription>{eventDescription}</EventDescription>
                 <ButtonGroup>
-                    <RequestTicketCredentialsButton
-                        onClick={() => onClick(eventId)}
-                    >
-                        {requestTicketCredentialsLabel}
-                    </RequestTicketCredentialsButton>
+                <RequestTicketCredentialsButton
+                    onClick={() => onClick(eventId)}
+                    disabled={hasTicket}
+                >
+                    {hasTicket ? "Ticket Obtained" : requestTicketCredentialsLabel}
+                </RequestTicketCredentialsButton>
                     <ScanQRCodeButton onClick={() => handleScanQRCode(eventId)}>
                         Scan QR Code
                     </ScanQRCodeButton>
@@ -183,9 +185,16 @@ const Button = styled.button`
     }
 `;
 
-const RequestTicketCredentialsButton = styled(Button)`
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
+const RequestTicketCredentialsButton = styled(Button)<{ disabled: boolean }>`
+    background: ${props => props.disabled ? '#888' : 'linear-gradient(45deg, #ff6b6b, #feca57)'};
     color: white;
+    opacity: ${props => props.disabled ? 0.7 : 1};
+    cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+
+    &:hover {
+        transform: ${props => props.disabled ? 'none' : 'translateY(-2px)'};
+        box-shadow: ${props => props.disabled ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.2)'};
+    }
 `;
 
 const ScanQRCodeButton = styled(Button)`
