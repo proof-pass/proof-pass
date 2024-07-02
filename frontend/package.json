@@ -1,26 +1,51 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev -p 8080",
-    "build": "next build",
-    "start": "next start -p 8080",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "react": "^18",
-    "react-dom": "^18",
-    "next": "14.2.4"
-  },
-  "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.4"
-  }
+    "name": "frontend",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "next dev -p 8080",
+        "build": "next build",
+        "start": "next start -p 8080",
+        "lint": "next lint",
+        "format": "prettier --write ."
+    },
+    "dependencies": {
+        "@eslint/config-array": "^0.16.0",
+        "@eslint/object-schema": "^2.1.4",
+        "@galxe-identity-protocol/sdk": "^1.0.8",
+        "crypto-browserify": "^3.12.0",
+        "ethers": "^6.13.1",
+        "glob": "^10.4.2",
+        "jotai": "^2.8.3",
+        "js-cookie": "^3.0.5",
+        "js-sha3": "^0.9.3",
+        "jsqr": "^1.4.0",
+        "jwt-decode": "^4.0.0",
+        "keccak256": "^1.0.6",
+        "lru-cache": "^10.2.2",
+        "next": "14.2.4",
+        "qr-scanner": "^1.4.2",
+        "react": "^18",
+        "react-dom": "^18",
+        "react-qr-code": "^2.0.15",
+        "react-webcam": "^7.2.0",
+        "rimraf": "^5.0.7",
+        "styled-components": "^6.1.11"
+    },
+    "devDependencies": {
+        "@types/js-cookie": "^3.0.6",
+        "@types/node": "^20.14.6",
+        "@types/react": "^18",
+        "@types/react-dom": "^18",
+        "@typescript-eslint/eslint-plugin": "^7.13.0",
+        "@typescript-eslint/parser": "^7.13.0",
+        "babel-plugin-styled-components": "^2.1.4",
+        "eslint": "^8",
+        "eslint-config-next": "14.2.4",
+        "next-transpile-modules": "^10.0.1",
+        "prettier": "^3.3.2",
+        "typescript": "^5",
+        "webpack": "^5.92.1"
+    }
 }
