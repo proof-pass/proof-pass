@@ -59,12 +59,10 @@ skaffold -p local dev
 
 ### Access the application
 
-Port-forward backend, frontend, postgres db:
+Port-forward backend, frontend, postgres db, or you can run each command separately:
 
 ```
-kubectl port-forward -n app svc/backend 3000:3000
-kubectl port-forward -n app svc/frontend 8080:8080
-kubectl port-forward -n app svc/postgres 5432:5432
+(trap 'kill 0' SIGINT; kubectl port-forward -n app svc/backend 3000:3000 & kubectl port-forward -n app svc/frontend 8080:8080 & kubectl port-forward -n app svc/postgres 5432:5432 & wait)
 ```
 
 Once the tunnel is running, you can:
