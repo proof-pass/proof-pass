@@ -4,7 +4,7 @@ openapi-generate-server:
 
 .PHONY: openapi-generate-client
 openapi-generate-client:
-	rm -rf frontend/src/api && openapi-generator generate -i openapi/v1/ticketing.yaml -g typescript-fetch -o frontend/src/api 
+	rm -rf frontend/src/api && openapi-generator generate -i openapi/v1/openapi.yaml -g typescript-fetch -o frontend/src/api 
 
 .PHONY: start-swagger-ui
 start-swagger-ui:

@@ -644,10 +644,10 @@
     ethers "^6.12.1"
     hardhat "^2.22.3"
 
-"@galxe-identity-protocol/sdk@^1.0.8":
-  version "1.0.8"
-  resolved "https://registry.npmjs.org/@galxe-identity-protocol/sdk/-/sdk-1.0.8.tgz"
-  integrity sha512-ni+PaoRZPmqfTFcgIwXek2kYaFlX0zpYDDLaDPnU7meVCT6gI+AQWxHiLR9Vewi3jSocXAId7cHMZJGKnl16gQ==
+"@galxe-identity-protocol/sdk@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.npmjs.org/@galxe-identity-protocol/sdk/-/sdk-1.0.9.tgz"
+  integrity sha512-0raElOS78sDEK3CuoEMcs89a9i52wZJbEXvrhqdySzYr+dl5RqzlWhwusNeJDrZ/fwYNt0uFody0VcTwo4ygJA==
   dependencies:
     "@galxe-identity-protocol/evm-contracts" "^1.0.3"
     "@iden3/js-crypto" "^1.1.0"
@@ -657,7 +657,6 @@
     ethers "^6.12.1"
     ffjavascript "^0.2.63"
     idb-keyval "^6.2.1"
-    js-sha3 "^0.8.0"
     node-fetch "^2.7.0"
     snarkjs "^0.7.4"
 

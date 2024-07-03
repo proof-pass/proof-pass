@@ -7,6 +7,7 @@ models/Event.ts
 models/LoginResponse.ts
 models/PutEmailCredentialRequest.ts
 models/PutTicketCredentialRequest.ts
+models/RecordAttendanceRequest.ts
 models/TicketCredential.ts
 models/UnencryptedEmailCredential.ts
 models/UnencryptedTicketCredential.ts
