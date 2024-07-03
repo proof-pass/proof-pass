@@ -54,7 +54,7 @@ eval $(minikube -p zk-ticketing docker-env)
 ### Run skaffold in local development mode
 
 ```
-skaffold dev
+skaffold -p local dev
 ```
 
 ### Access the application
