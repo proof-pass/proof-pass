@@ -7,6 +7,7 @@ resources:
   - backend.yaml
   - backend_cm.yaml
   - frontend.yaml
+  - frontend_cm.yaml
   - issuer.yaml
   - issuer_cm.yaml
   - postgres.yaml

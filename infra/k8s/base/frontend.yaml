@@ -17,6 +17,9 @@ spec:
           image: oyyblin/proof-pass-frontend
           ports:
             - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: frontend
           resources:
             limits:
               memory: "500Mi"

@@ -16,6 +16,10 @@ configMapGenerator:
     name: backend
   - behavior: merge
     literals:
+      - ENV=local
+    name: frontend
+  - behavior: merge
+    literals:
       - ISSUER_ID=125344402375953606533377270523694284815265854046 # Demo issuer - https://etherscan.io/tx/0xfbf58513352fe0dc899544b66013adbacb90437210e0008ceeb7b9c9ecec5bdd#eventlog
       - POSTGRES_DB=postgres
       - POSTGRES_HOST=postgres

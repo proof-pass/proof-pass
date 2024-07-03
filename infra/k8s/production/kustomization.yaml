@@ -18,6 +18,10 @@ configMapGenerator:
     name: backend
   - behavior: merge
     literals:
+      - ENV=production
+    name: frontend
+  - behavior: merge
+    literals:
       - ISSUER_ID=125344402375953606533377270523694284815265854046 # TODO: update me
       - POSTGRES_DB=postgres
       - POSTGRES_HOST=postgres
