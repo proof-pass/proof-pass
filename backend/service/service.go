@@ -14,6 +14,7 @@ import (
 	"github.com/proof-pass/proof-pass/backend/jwt"
 	"github.com/proof-pass/proof-pass/backend/openapi"
 	"github.com/proof-pass/proof-pass/backend/repos"
+	"github.com/proof-pass/proof-pass/backend/repos/attendances"
 	"github.com/proof-pass/proof-pass/backend/repos/email_credentials"
 	"github.com/proof-pass/proof-pass/backend/repos/registrations"
 	"github.com/proof-pass/proof-pass/backend/repos/ticket_credentials"
@@ -57,6 +58,57 @@ func NewAPIService(
 		jwtService:                jwtService,
 		issuerClient:              issuerClient,
 	}
+}
+
+// EventsEventIdAttendancePost - Record attendance for an event
+func (s *APIService) EventsEventIdAttendancePost(ctx context.Context, eventId string, recordAttendanceRequest openapi.RecordAttendanceRequest) (openapi.ImplResponse, error) {
+	logger := log.Ctx(ctx).With().Str("op", "EventsEventIdAttendancePost").Str("eventID", eventId).Logger()
+	ctx = logger.WithContext(ctx)
+
+	credType := recordAttendanceRequest.Type
+	// credContext := recordAttendanceRequest.Context
+	nullifier := recordAttendanceRequest.Nullifier
+	// issuerKeyID := recordAttendanceRequest.KeyId
+	eventID := recordAttendanceRequest.EventId
+	adminCode := recordAttendanceRequest.AdminCode
+
+	// validate event admin code
+	event, err := s.dbClient.Events.GetEventByID(ctx, eventID)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			logger.Err(err).Msg("Event not found")
+			return openapi.Response(http.StatusNotFound, nil), nil
+		}
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+	if event.AdminCode != adminCode {
+		errMsg := "Invalid admin code"
+		logger.Info().Msg(errMsg)
+		return openapi.Response(http.StatusUnauthorized, errMsg), nil
+	}
+
+	// validate credential type
+	if credType != fmt.Sprint(unitCredentialTypeID) {
+		errMsg := "Invalid credential type"
+		logger.Info().Msg(errMsg)
+		return openapi.Response(http.StatusBadRequest, errMsg), nil
+	}
+
+	// TODO: validate event context
+	// TODO: validate issuer
+
+	attendance, err := s.dbClient.Attendances.CreateOne(ctx, attendances.CreateOneParams{
+		EventID:   eventID,
+		Nullifier: nullifier,
+	})
+	if err != nil {
+		logger.Err(err).Msg("Failed to record attendance")
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+
+	logger.Info().Str("nullifier", nullifier).Int32("attendance", attendance.ID).Msg("Recorded attendance")
+
+	return openapi.Response(http.StatusCreated, nil), nil
 }
 
 // EventsEventIdGet - Get event details

@@ -1,5 +1,19 @@
 version: "2"
 sql:
+  - name: attendances
+    schema: attendances/schema.sql
+    queries: attendances/query.sql
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        package: attendances
+        out: attendances
+    analyzer:
+      database: false
+    rules:
+      - sqlc/db-prepare
+      - postgresql-query-too-costly
   - name: email_credentials
     schema: email_credentials/schema.sql
     queries: email_credentials/query.sql

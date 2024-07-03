@@ -68,6 +68,7 @@ kubectl port-forward -n app svc/postgres 5432:5432
 ```
 
 Once the tunnel is running, you can:
+
 - access frontend at: http://localhost:8080
 - access backend at: http://localhost:3000
 - access db using any postgres client (e.g. pgAdmin, DBeaver, etc.) with the following credentials (for local development only:

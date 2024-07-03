@@ -6,3 +6,25 @@ resources:
   - ../base
   - gateway_api.yaml
   - gateway_frontend.yaml
+  - secrets.yaml # TODO: remove me
+
+# patch config maps
+configMapGenerator:
+  - behavior: merge
+    literals:
+      - BACKEND_RESTPORT=3000
+      - BACKEND_POSTGRESUSERNAME=postgres
+      - BACKEND_JWTEXPIRESSEC=36000
+    name: backend
+  - behavior: merge
+    literals:
+      - ISSUER_ID=125344402375953606533377270523694284815265854046 # TODO: update me
+      - POSTGRES_DB=postgres
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    name: issuer
+  - behavior: merge
+    literals:
+      - POSTGRES_DB=db
+      - POSTGRES_USER=postgres
+    name: postgres

@@ -51,6 +51,11 @@ func NewDefaultAPIController(s DefaultAPIServicer, opts ...DefaultAPIOption) *De
 // Routes returns all the api routes for the DefaultAPIController
 func (c *DefaultAPIController) Routes() Routes {
 	return Routes{
+		"EventsEventIdAttendancePost": Route{
+			strings.ToUpper("Post"),
+			"/v1/events/{eventId}/attendance",
+			c.EventsEventIdAttendancePost,
+		},
 		"EventsEventIdGet": Route{
 			strings.ToUpper("Get"),
 			"/v1/events/{eventId}",
@@ -117,6 +122,39 @@ func (c *DefaultAPIController) Routes() Routes {
 			c.UserUpdatePut,
 		},
 	}
+}
+
+// EventsEventIdAttendancePost - Record attendance for an event
+func (c *DefaultAPIController) EventsEventIdAttendancePost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	eventIdParam := params["eventId"]
+	if eventIdParam == "" {
+		c.errorHandler(w, r, &RequiredError{"eventId"}, nil)
+		return
+	}
+	recordAttendanceRequestParam := RecordAttendanceRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&recordAttendanceRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertRecordAttendanceRequestRequired(recordAttendanceRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	if err := AssertRecordAttendanceRequestConstraints(recordAttendanceRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.EventsEventIdAttendancePost(r.Context(), eventIdParam, recordAttendanceRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	_ = EncodeJSONResponse(result.Body, &result.Code, w)
 }
 
 // EventsEventIdGet - Get event details

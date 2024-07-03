@@ -67,6 +67,26 @@ paths:
       security:
       - bearerAuth: []
       summary: Request a new ticket credential for an event
+  /events/{eventId}/attendance:
+    post:
+      parameters:
+      - explode: false
+        in: path
+        name: eventId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordAttendanceRequest'
+        required: true
+      responses:
+        "201":
+          description: Attendance recorded successfully
+      summary: Record attendance for an event
   /user/request-verification-code:
     post:
       requestBody:
@@ -207,6 +227,28 @@ components:
         description:
           type: string
         url:
+          type: string
+        admin_code:
+          type: string
+      type: object
+    RecordAttendanceRequest:
+      example:
+        admin_code: admin_code
+        event_id: event_id
+        key_id: key_id
+        nullifier: nullifier
+        context: context
+        type: type
+      properties:
+        type:
+          type: string
+        context:
+          type: string
+        nullifier:
+          type: string
+        key_id:
+          type: string
+        event_id:
           type: string
         admin_code:
           type: string

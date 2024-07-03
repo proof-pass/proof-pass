@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/proof-pass/proof-pass/backend/jwt"
@@ -32,10 +33,12 @@ func authMiddleware(h http.Handler, jwtService *jwt.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Skip authentication for health check and preflight requests
 		if r.URL.Path == "/v1/health" ||
+			r.Method == http.MethodOptions ||
 			r.URL.Path == "/v1/user/login" ||
 			r.URL.Path == "/v1/user/request-verification-code" ||
-			r.URL.Path == "/v1/events" ||
-			r.Method == http.MethodOptions {
+			(r.Method == http.MethodGet && r.URL.Path == "/v1/events") ||
+			(r.Method == http.MethodGet && regexp.MustCompile("^/v1/events/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$").MatchString(r.URL.Path)) ||
+			(r.Method == http.MethodPost && regexp.MustCompile("^/v1/events/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}/attendance$").MatchString(r.URL.Path)) {
 			h.ServeHTTP(w, r)
 			return
 		}

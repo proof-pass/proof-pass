@@ -27,6 +27,17 @@ func NewDefaultAPIService() *DefaultAPIService {
 	return &DefaultAPIService{}
 }
 
+// EventsEventIdAttendancePost - Record attendance for an event
+func (s *DefaultAPIService) EventsEventIdAttendancePost(ctx context.Context, eventId string, recordAttendanceRequest RecordAttendanceRequest) (ImplResponse, error) {
+	// TODO - update EventsEventIdAttendancePost with the required logic for this service method.
+	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
+
+	// TODO: Uncomment the next line to return response Response(201, {}) or use other options such as http.Ok ...
+	// return Response(201, nil),nil
+
+	return Response(http.StatusNotImplemented, nil), errors.New("EventsEventIdAttendancePost method not implemented")
+}
+
 // EventsEventIdGet - Get event details
 func (s *DefaultAPIService) EventsEventIdGet(ctx context.Context, eventId string) (ImplResponse, error) {
 	// TODO - update EventsEventIdGet with the required logic for this service method.

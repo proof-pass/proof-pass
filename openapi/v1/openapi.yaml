@@ -62,6 +62,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UnencryptedTicketCredential"
+  /events/{eventId}/attendance:
+    post:
+      summary: Record attendance for an event
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordAttendanceRequest"
+      responses:
+        "201":
+          description: Attendance recorded successfully
+
   /user/request-verification-code:
     post:
       summary: Request an email verification code
@@ -202,6 +221,21 @@ components:
         description:
           type: string
         url:
+          type: string
+        admin_code:
+          type: string
+    RecordAttendanceRequest:
+      type: object
+      properties:
+        type:
+          type: string
+        context:
+          type: string
+        nullifier:
+          type: string
+        key_id:
+          type: string
+        event_id:
           type: string
         admin_code:
           type: string
