@@ -59,29 +59,22 @@ skaffold dev
 
 ### Access the application
 
-Port-forward backend and frontend (since they are using LoadBalancer type service):
+Port-forward backend, frontend, postgres db:
 
 ```
-minikube tunnel -p zk-ticketing
+kubectl port-forward -n app svc/backend 3000:3000
+kubectl port-forward -n app svc/frontend 8080:8080
+kubectl port-forward -n app svc/postgres 5432:5432
 ```
 
-Once the tunnel is running, you can access the application at:
-
-- Frontend: http://localhost:8080
-- Backend: http://localhost:3000
-
-Port-forward postgres db:
-
-```
-kubectl port-forward  -n app svc/postgres 5432:5432
-```
-
-Once the tunnel is running, you can access db using any postgres client (e.g. pgAdmin, DBeaver, etc.) with the following credentials (for local development only:
-
-- Host: localhost
-- Port: 5432
-- Username: postgres
-- Password: password
+Once the tunnel is running, you can:
+- access frontend at: http://localhost:8080
+- access backend at: http://localhost:3000
+- access db using any postgres client (e.g. pgAdmin, DBeaver, etc.) with the following credentials (for local development only:
+  - Host: localhost
+  - Port: 5432
+  - Username: postgres
+  - Password: password
 
 ### Open Swagger UI to test the API
 

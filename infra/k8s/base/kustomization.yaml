@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: app
+
+resources:
+  - namespace.yaml
+  - backend.yaml
+  - backend_cm.yaml
+  - frontend.yaml
+  - issuer.yaml
+  - issuer_cm.yaml
+  - postgres.yaml
+  - postgres_cm.yaml
+  - redis.yaml
+  - swagger_ui.yaml

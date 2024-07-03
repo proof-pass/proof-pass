@@ -2,16 +2,6 @@ apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
   name: proof-pass-app
-manifests:
-  rawYaml:
-    - infra/k8s/frontend.yaml
-    - infra/k8s/backend.yaml
-    - infra/k8s/swagger_ui.yaml
-    - infra/k8s/issuer.yaml
-    - infra/k8s/postgres.yaml
-    - infra/k8s/redis.yaml
-    - infra/k8s/gateway_frontend.yaml
-    - infra/k8s/gateway_api.yaml
 build:
   artifacts:
     - image: oyyblin/proof-pass-frontend
@@ -26,12 +16,17 @@ build:
       context: issuer
       docker:
         dockerfile: Dockerfile
-deploy:
-  kubectl:
-    defaultNamespace: app
 profiles:
   - name: local
+    manifests:
+      kustomize:
+        paths:
+          - infra/k8s/local
   - name: production
+    manifests:
+      kustomize:
+        paths:
+          - infra/k8s/production
     build:
       local:
         useBuildkit: false
