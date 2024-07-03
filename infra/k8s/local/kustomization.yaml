@@ -1,6 +1,5 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-namespace: app
 
 resources:
   - ../base
@@ -14,10 +13,12 @@ configMapGenerator:
       - BACKEND_POSTGRESUSERNAME=postgres
       - BACKEND_JWTEXPIRESSEC=36000
     name: backend
+    namespace: app
   - behavior: merge
     literals:
       - ENV=local
     name: frontend
+    namespace: app
   - behavior: merge
     literals:
       - ISSUER_ID=125344402375953606533377270523694284815265854046 # Demo issuer - https://etherscan.io/tx/0xfbf58513352fe0dc899544b66013adbacb90437210e0008ceeb7b9c9ecec5bdd#eventlog
@@ -30,3 +31,4 @@ configMapGenerator:
       - POSTGRES_DB=db
       - POSTGRES_USER=postgres
     name: postgres
+    namespace: app

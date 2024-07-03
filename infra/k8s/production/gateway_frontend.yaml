@@ -2,6 +2,7 @@ apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: frontend
+  namespace: app
   annotations:
     networking.gke.io/certmap: app-certmap
 spec:
@@ -32,6 +33,7 @@ kind: HTTPRoute
 apiVersion: gateway.networking.k8s.io/v1beta1
 metadata:
   name: frontend-http-to-https-redirect
+  namespace: app
 spec:
   parentRefs:
     - name: frontend
