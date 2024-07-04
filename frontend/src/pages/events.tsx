@@ -156,9 +156,16 @@ const EventsPage: React.FC = () => {
         }
     }, [api, fetchEvents]);
 
-    const handleScanQRCode = useCallback((eventId: string, eventName: string) => {
+    const handleScanQRCode = useCallback((eventId: string, eventName: string, adminCode?: string) => {
         console.log('Initiate QR Code Scan for event:', eventId);
-        router.push(`/scan-qr?eventId=${eventId}&eventName=${encodeURIComponent(eventName)}`);
+        const queryParams = new URLSearchParams({
+            eventId,
+            eventName: encodeURIComponent(eventName),
+        });
+        if (adminCode) {
+            queryParams.append('adminCode', adminCode);
+        }
+        router.push(`/scan-qr?${queryParams.toString()}`);
     }, [router]);
 
     return (

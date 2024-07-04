@@ -16,6 +16,7 @@ import {
     issuer,
   } from "@galxe-identity-protocol/sdk";
 import { ethers } from "ethers";
+import { decryptValue } from '@/utils/utils';
 
 const CredentialsPage: React.FC = () => {
   const router = useRouter();
@@ -90,27 +91,35 @@ const CredentialsPage: React.FC = () => {
     }
 };
   
-  const generateProof = async (ticket: TicketCredential, api: DefaultApi): Promise<string> => {
-    try {
-      await prepare();
-  
-      const provider = new ethers.JsonRpcProvider("https://cloudflare-eth.com");
-  
-      const u = new user.User();
-      const userDetails = await api.userMeGet();
-      
-      if (!userDetails.encryptedIdentitySecret || !userDetails.encryptedInternalNullifier) {
-        throw new Error('User details are incomplete');
-      }
-  
-      const identitySlice: user.IdentitySlice = {
-        identitySecret: BigInt(userDetails.encryptedIdentitySecret),
-        internalNullifier: BigInt(userDetails.encryptedInternalNullifier),
-        domain: "evm"
-      };
-  
-      u.addIdentitySlice(identitySlice);
-      console.log('User set up successfully.');
+const generateProof = async (ticket: TicketCredential, api: DefaultApi): Promise<string> => {
+  try {
+    await prepare();
+
+    const provider = new ethers.JsonRpcProvider("https://cloudflare-eth.com");
+
+    const u = new user.User();
+    const userDetails = await api.userMeGet();
+    
+    if (!userDetails.encryptedIdentitySecret || !userDetails.encryptedInternalNullifier) {
+      throw new Error('User details are incomplete');
+    }
+
+    const hashedPassword = localStorage.getItem('auth_password');
+    if (!hashedPassword) {
+      throw new Error('Authentication password not found');
+    }
+
+    const decryptedIdentitySecret = decryptValue(userDetails.encryptedIdentitySecret, hashedPassword);
+    const decryptedInternalNullifier = decryptValue(userDetails.encryptedInternalNullifier, hashedPassword);
+
+    const identitySlice: user.IdentitySlice = {
+      identitySecret: BigInt(decryptedIdentitySecret),
+      internalNullifier: BigInt(decryptedInternalNullifier),
+      domain: "evm"
+    };
+
+    u.addIdentitySlice(identitySlice);
+    console.log('User set up successfully with decrypted identity slice.');
   
       const identityCommitment = u.getIdentityCommitment("evm");
       if (!identityCommitment) {
