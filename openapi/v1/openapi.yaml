@@ -222,7 +222,11 @@ components:
           type: string
         url:
           type: string
-        admin_code:
+        chain_id:
+          type: string
+        context_id:
+          type: string
+        issuer_key_id:
           type: string
     RecordAttendanceRequest:
       type: object

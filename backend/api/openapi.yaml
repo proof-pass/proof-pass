@@ -214,9 +214,11 @@ components:
   schemas:
     Event:
       example:
-        admin_code: admin_code
+        chain_id: chain_id
         name: name
         description: description
+        context_id: context_id
+        issuer_key_id: issuer_key_id
         id: id
         url: url
       properties:
@@ -228,7 +230,11 @@ components:
           type: string
         url:
           type: string
-        admin_code:
+        chain_id:
+          type: string
+        context_id:
+          type: string
+        issuer_key_id:
           type: string
       type: object
     RecordAttendanceRequest:

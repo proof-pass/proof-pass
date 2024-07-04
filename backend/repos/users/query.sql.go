@@ -16,19 +16,31 @@ INSERT INTO users (
         identity_commitment,
         encrypted_internal_nullifier,
         encrypted_identity_secret,
+        temporary_password,
         created_at
     )
-VALUES ($1, $2, '', '', '', NOW())
-RETURNING id, email, identity_commitment, encrypted_internal_nullifier, encrypted_identity_secret, created_at
+VALUES ($1, $2, $3, $4, $5, $6, NOW())
+RETURNING id, email, identity_commitment, encrypted_internal_nullifier, encrypted_identity_secret, temporary_password, created_at
 `
 
 type CreateUserParams struct {
-	ID    string
-	Email string
+	ID                         string
+	Email                      string
+	IdentityCommitment         string
+	EncryptedInternalNullifier string
+	EncryptedIdentitySecret    string
+	TemporaryPassword          string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.ID, arg.Email)
+	row := q.db.QueryRow(ctx, createUser,
+		arg.ID,
+		arg.Email,
+		arg.IdentityCommitment,
+		arg.EncryptedInternalNullifier,
+		arg.EncryptedIdentitySecret,
+		arg.TemporaryPassword,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -36,13 +48,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.IdentityCommitment,
 		&i.EncryptedInternalNullifier,
 		&i.EncryptedIdentitySecret,
+		&i.TemporaryPassword,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, identity_commitment, encrypted_internal_nullifier, encrypted_identity_secret, created_at
+SELECT id, email, identity_commitment, encrypted_internal_nullifier, encrypted_identity_secret, temporary_password, created_at
 FROM users
 WHERE email = $1
 `
@@ -56,13 +69,14 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.IdentityCommitment,
 		&i.EncryptedInternalNullifier,
 		&i.EncryptedIdentitySecret,
+		&i.TemporaryPassword,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, identity_commitment, encrypted_internal_nullifier, encrypted_identity_secret, created_at
+SELECT id, email, identity_commitment, encrypted_internal_nullifier, encrypted_identity_secret, temporary_password, created_at
 FROM users
 WHERE id = $1
 `
@@ -76,6 +90,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
 		&i.IdentityCommitment,
 		&i.EncryptedInternalNullifier,
 		&i.EncryptedIdentitySecret,
+		&i.TemporaryPassword,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -87,7 +102,7 @@ SET identity_commitment = $1,
     encrypted_internal_nullifier = $2,
     encrypted_identity_secret = $3
 WHERE id = $4
-RETURNING id, email, identity_commitment, encrypted_internal_nullifier, encrypted_identity_secret, created_at
+RETURNING id, email, identity_commitment, encrypted_internal_nullifier, encrypted_identity_secret, temporary_password, created_at
 `
 
 type UpdateUserParams struct {
@@ -111,6 +126,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.IdentityCommitment,
 		&i.EncryptedInternalNullifier,
 		&i.EncryptedIdentitySecret,
+		&i.TemporaryPassword,
 		&i.CreatedAt,
 	)
 	return i, err

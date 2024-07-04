@@ -23,7 +23,11 @@ type Event struct {
 
 	Url string `json:"url,omitempty"`
 
-	AdminCode string `json:"admin_code,omitempty"`
+	ChainId string `json:"chain_id,omitempty"`
+
+	ContextId string `json:"context_id,omitempty"`
+
+	IssuerKeyId string `json:"issuer_key_id,omitempty"`
 }
 
 // AssertEventRequired checks if the required fields are not zero-ed

@@ -14,6 +14,9 @@ type Event struct {
 	Description string
 	Url         string
 	AdminCode   string
+	ChainID     string
+	ContextID   string
+	IssuerKeyID string
 	StartDate   pgtype.Timestamptz
 	EndDate     pgtype.Timestamptz
 	CreatedAt   pgtype.Timestamptz

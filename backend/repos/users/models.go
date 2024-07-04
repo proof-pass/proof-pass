@@ -14,5 +14,6 @@ type User struct {
 	IdentityCommitment         string
 	EncryptedInternalNullifier string
 	EncryptedIdentitySecret    string
+	TemporaryPassword          string
 	CreatedAt                  pgtype.Timestamptz
 }

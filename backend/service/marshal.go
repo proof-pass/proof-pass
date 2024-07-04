@@ -14,7 +14,9 @@ func MarshalEvent(event events.Event) openapi.Event {
 		Name:        event.Name,
 		Description: event.Description,
 		Url:         event.Url,
-		AdminCode:   event.AdminCode,
+		ChainId:     event.ChainID,
+		ContextId:   event.ContextID,
+		IssuerKeyId: event.IssuerKeyID,
 	}
 }
 

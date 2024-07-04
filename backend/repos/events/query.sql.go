@@ -10,7 +10,7 @@ import (
 )
 
 const getEventByID = `-- name: GetEventByID :one
-SELECT id, name, description, url, admin_code, start_date, end_date, created_at
+SELECT id, name, description, url, admin_code, chain_id, context_id, issuer_key_id, start_date, end_date, created_at
 FROM events
 WHERE id = $1
 `
@@ -24,6 +24,9 @@ func (q *Queries) GetEventByID(ctx context.Context, id string) (Event, error) {
 		&i.Description,
 		&i.Url,
 		&i.AdminCode,
+		&i.ChainID,
+		&i.ContextID,
+		&i.IssuerKeyID,
 		&i.StartDate,
 		&i.EndDate,
 		&i.CreatedAt,
@@ -32,7 +35,7 @@ func (q *Queries) GetEventByID(ctx context.Context, id string) (Event, error) {
 }
 
 const listEvents = `-- name: ListEvents :many
-SELECT id, name, description, url, admin_code, start_date, end_date, created_at
+SELECT id, name, description, url, admin_code, chain_id, context_id, issuer_key_id, start_date, end_date, created_at
 FROM events
 `
 
@@ -51,6 +54,9 @@ func (q *Queries) ListEvents(ctx context.Context) ([]Event, error) {
 			&i.Description,
 			&i.Url,
 			&i.AdminCode,
+			&i.ChainID,
+			&i.ContextID,
+			&i.IssuerKeyID,
 			&i.StartDate,
 			&i.EndDate,
 			&i.CreatedAt,

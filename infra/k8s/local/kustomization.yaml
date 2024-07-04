@@ -26,6 +26,7 @@ configMapGenerator:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
     name: issuer
+    namespace: app
   - behavior: merge
     literals:
       - POSTGRES_DB=db

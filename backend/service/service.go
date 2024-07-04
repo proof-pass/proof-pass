@@ -265,8 +265,12 @@ func (s *APIService) UserLoginPost(ctx context.Context, userLogin openapi.UserLo
 		if err == pgx.ErrNoRows {
 			logger.Info().Msg("User not found, creating new user")
 			user, err = s.dbClient.Users.CreateUser(ctx, users.CreateUserParams{
-				ID:    uuid.NewString(),
-				Email: email.Address,
+				ID:                         uuid.NewString(),
+				Email:                      email.Address,
+				IdentityCommitment:         "",
+				EncryptedInternalNullifier: "",
+				EncryptedIdentitySecret:    "",
+				TemporaryPassword:          "",
 			})
 			if err != nil {
 				return openapi.Response(http.StatusInternalServerError, nil), err
