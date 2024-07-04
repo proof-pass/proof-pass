@@ -48,7 +48,19 @@ export interface Event {
      * @type {string}
      * @memberof Event
      */
-    adminCode?: string;
+    chainId?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Event
+     */
+    contextId?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof Event
+     */
+    issuerKeyId?: string;
 }
 
 /**
@@ -72,7 +84,9 @@ export function EventFromJSONTyped(json: any, ignoreDiscriminator: boolean): Eve
         'name': json['name'] == null ? undefined : json['name'],
         'description': json['description'] == null ? undefined : json['description'],
         'url': json['url'] == null ? undefined : json['url'],
-        'adminCode': json['admin_code'] == null ? undefined : json['admin_code'],
+        'chainId': json['chain_id'] == null ? undefined : json['chain_id'],
+        'contextId': json['context_id'] == null ? undefined : json['context_id'],
+        'issuerKeyId': json['issuer_key_id'] == null ? undefined : json['issuer_key_id'],
     };
 }
 
@@ -86,7 +100,9 @@ export function EventToJSON(value?: Event | null): any {
         'name': value['name'],
         'description': value['description'],
         'url': value['url'],
-        'admin_code': value['adminCode'],
+        'chain_id': value['chainId'],
+        'context_id': value['contextId'],
+        'issuer_key_id': value['issuerKeyId'],
     };
 }
 

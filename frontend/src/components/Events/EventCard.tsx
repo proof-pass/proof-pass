@@ -15,25 +15,19 @@ const EventCard: React.FC<EventCardProps> = ({
     hasTicket,
 }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [inputAdminCode, setInputAdminCode] = useState('');
     const [isHostLoggedIn, setIsHostLoggedIn] = useState(false);
-    const [adminCode, setAdminCode] = useState('');
 
     const toggleExpansion = () => setIsExpanded(!isExpanded);
 
     const handleHostLogin = () => {
-        if (adminCode === 'correct-admin-code') {
+        if (inputAdminCode) {
             setIsHostLoggedIn(true);
-        } else {
-            alert('Invalid admin code');
         }
     };
 
-    const handleScanQRCode = (eventId: string, eventName: string) => {
-        if (isHostLoggedIn) {
-            onScanQRCode(eventId, eventName, adminCode);
-        } else {
-            onScanQRCode(eventId, eventName);
-        }
+    const handleScanQRCode = () => {
+        onScanQRCode(eventId, eventName, isHostLoggedIn ? inputAdminCode : undefined);
     };
 
     return (
@@ -64,28 +58,30 @@ const EventCard: React.FC<EventCardProps> = ({
                 </EventUrl>
                 <EventDescription>{eventDescription}</EventDescription>
                 <ButtonGroup>
-                <RequestTicketCredentialsButton
-                    onClick={() => onClick(eventId)}
-                    disabled={hasTicket}
-                >
-                    {hasTicket ? "Ticket Obtained" : requestTicketCredentialsLabel}
-                </RequestTicketCredentialsButton>
-                    <ScanQRCodeButton onClick={() => handleScanQRCode(eventId, eventName)}>
+                    <RequestTicketCredentialsButton
+                        onClick={() => onClick(eventId)}
+                        disabled={hasTicket}
+                    >
+                        {hasTicket ? "Ticket Obtained" : requestTicketCredentialsLabel}
+                    </RequestTicketCredentialsButton>
+                    <ScanQRCodeButton onClick={handleScanQRCode}>
                         Scan QR Code
                     </ScanQRCodeButton>
                 </ButtonGroup>
-                {!isHostLoggedIn && (
+                {!isHostLoggedIn ? (
                     <HostLoginContainer>
                         <AdminCodeInput
                             type="text"
                             placeholder="Enter admin code"
-                            value={adminCode}
-                            onChange={(e) => setAdminCode(e.target.value)}
+                            value={inputAdminCode}
+                            onChange={(e) => setInputAdminCode(e.target.value)}
                         />
                         <HostLoginButton onClick={handleHostLogin}>
                             Host Login
                         </HostLoginButton>
                     </HostLoginContainer>
+                ) : (
+                    <HostLoggedInButton disabled>Host Logged In</HostLoggedInButton>
                 )}
             </CardBody>
         </Card>
@@ -183,6 +179,14 @@ const Button = styled.button`
     &:active {
         transform: translateY(0);
     }
+`;
+
+const HostLoggedInButton = styled(Button)`
+    background: #4ecdc4;
+    color: white;
+    opacity: 0.7;
+    cursor: not-allowed;
+    width: 100%;
 `;
 
 const RequestTicketCredentialsButton = styled(Button)<{ disabled: boolean }>`

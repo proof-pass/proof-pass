@@ -1,28 +1,59 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import withAuth from '@/components/withAuth';
 import QrScanner from 'qr-scanner';
 import {
-    prepare,
-    evm,
-    credential,
-    credType,
-    babyzkTypes,
-    babyzk,
-  } from "@galxe-identity-protocol/sdk";
+  prepare,
+  evm,
+  credential,
+  credType,
+  babyzkTypes,
+  babyzk,
+} from "@galxe-identity-protocol/sdk";
 import { ethers } from "ethers";
+import { DefaultApi, Configuration, FetchAPI } from '@/api';
+import { getToken } from '@/utils/auth';
 
 const ScanQRPage: React.FC = () => {
   const router = useRouter();
-  const { eventId, eventName } = router.query;
+  const { eventId, eventName, adminCode } = router.query;
   const videoRef = useRef<HTMLVideoElement>(null);
   const [verified, setVerified] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adminCodeError, setAdminCodeError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const qrScannerRef = useRef<QrScanner | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [hasAttendedBefore, setHasAttendedBefore] = useState<boolean>(false);
+  const [contextMismatchError, setContextMismatchError] = useState<string | null>(null);
+
+  const api = useMemo(() => {
+    const token = getToken();
+
+    const customFetch: FetchAPI = async (input: RequestInfo, init?: RequestInit) => {
+      if (!init) {
+        init = {};
+      }
+      if (!init.headers) {
+        init.headers = {};
+      }
+
+      if (token) {
+        (init.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+      }
+
+      return fetch(input, init);
+    };
+
+    const config = new Configuration({
+      accessToken: token,
+      fetchApi: customFetch
+    });
+
+    return new DefaultApi(config);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -37,9 +68,11 @@ const ScanQRPage: React.FC = () => {
   const startScanning = async () => {
     console.log("Start scanning clicked");
     setError(null);
+    setAdminCodeError(null);
+    setContextMismatchError(null);
     setVerified(null);
-    
-    // Stop and destroy previous scanner if it exists
+    setHasAttendedBefore(false);
+  
     if (qrScannerRef.current) {
       qrScannerRef.current.destroy();
       qrScannerRef.current = null;
@@ -83,10 +116,16 @@ const ScanQRPage: React.FC = () => {
   const handleScan = async (scannedData: string) => {
     try {
       await prepare();
+      setError(null);
+      setContextMismatchError(null);
       const proof: babyzkTypes.WholeProof = JSON.parse(scannedData);
       console.log('Parsed Proof:', proof);
       const verificationResult = await verifyProof(proof);
       setVerified(verificationResult);
+  
+      if (verificationResult && adminCode) {
+        await recordAttendance(eventId as string, proof, adminCode as string);
+      }
     } catch (error) {
       console.error('Error verifying proof:', error);
       setVerified(false);
@@ -110,6 +149,7 @@ const ScanQRPage: React.FC = () => {
   
       if (actualContextID === undefined) {
         console.error('Context ID not found in the proof');
+        setError('Invalid proof: Context ID not found');
         return false;
       }
   
@@ -117,6 +157,7 @@ const ScanQRPage: React.FC = () => {
         console.error('Context ID mismatch');
         console.log('Expected Context ID:', expectedContextID.toString());
         console.log('Actual Context ID:', actualContextID.toString());
+        setContextMismatchError('This ticket is for a different event. Please check and try again.');
         return false;
       }
   
@@ -132,7 +173,56 @@ const ScanQRPage: React.FC = () => {
       return result === evm.VerifyResult.OK;
     } catch (error) {
       console.error('Error in verifyProof:', error);
+      setError('Failed to verify the proof. Please try again.');
       return false;
+    }
+  };
+
+  const recordAttendance = async (eventId: string, proof: babyzkTypes.WholeProof, adminCode: string) => {
+    try {
+      setError(null);
+      setAdminCodeError(null);
+      setHasAttendedBefore(false);
+      const publicSignals = babyzk.defaultPublicSignalGetter;
+      await api.eventsEventIdAttendancePost({
+        eventId,
+        recordAttendanceRequest: {
+          type: credType.primitiveTypes.unit.type_id.toString(),
+          context: publicSignals(credential.IntrinsicPublicSignal.Context, proof)?.toString(),
+          nullifier: publicSignals(credential.IntrinsicPublicSignal.Nullifier, proof)?.toString(),
+          keyId: publicSignals(credential.IntrinsicPublicSignal.KeyId, proof)?.toString(),
+          eventId: eventId,
+          adminCode: adminCode
+        }
+      });
+      console.log('Attendance recorded successfully');
+      setVerified(true);
+    } catch (error) {
+      console.error('Error recording attendance:', error);
+      setVerified(false);
+      
+      if (error instanceof Error) {
+        const errorResponse = error as { status?: number; body?: { message?: string } };
+        switch (errorResponse.status) {
+          case 401:
+            setAdminCodeError('Invalid admin code. Please go back and enter the correct code.');
+            break;
+          case 404:
+            setError('Event not found. Please check the event details and try again.');
+            break;
+          case 400:
+            setError('Invalid credential type. Please check your ticket and try again.');
+            break;
+          case 409: 
+            setHasAttendedBefore(true);
+            setVerified(true);
+            break;
+          default:
+            setError(errorResponse.body?.message || 'Failed to record attendance. Please try again.');
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     }
   };
 
@@ -159,7 +249,7 @@ const ScanQRPage: React.FC = () => {
 
   return (
     <MainContainer>
-    <GlobalStyle />
+      <GlobalStyle />
       <Card>
         <Header>
           <GoBackButton onClick={handleGoBack}>
@@ -195,15 +285,35 @@ const ScanQRPage: React.FC = () => {
             <PlaceholderText>Press &apos;Start Scanning&apos; to begin</PlaceholderText>
           )}
         </ScannerContainer>
-        {error && <ErrorText>{error}</ErrorText>}
+        {error && (
+          <ErrorContainer>
+            <ErrorText>{error}</ErrorText>
+          </ErrorContainer>
+        )}
+        {adminCodeError && (
+          <ErrorContainer>
+            <ErrorText>{adminCodeError}</ErrorText>
+          </ErrorContainer>
+        )}
+        {contextMismatchError && (
+          <ErrorContainer>
+            <ErrorText>{contextMismatchError}</ErrorText>
+          </ErrorContainer>
+        )}
+        {verified === true && (
+          <SuccessContainer>
+            {hasAttendedBefore ? (
+              <WarningText>
+                Attendance was previously recorded for this event.
+              </WarningText>
+            ) : (
+              <SuccessText>Attendance recorded successfully!</SuccessText>
+            )}
+          </SuccessContainer>
+        )}
         <ScanButton onClick={startScanning} disabled={isScanning}>
           {isScanning ? 'Scanning...' : 'Start Scanning'}
         </ScanButton>
-        <Result>
-          {verified !== null && (
-            verified ? <Verified>Verified</Verified> : <NotVerified>Not Verified</NotVerified>
-          )}
-        </Result>
       </Card>
     </MainContainer>
   );
@@ -322,27 +432,36 @@ const ScannerContainer = styled.div`
   height: 300px;
 `;
 
-const Result = styled.div`
-  color: rgba(255, 255, 255, 0.8);
-  text-align: center;
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.6;
-`;
-
-const Verified = styled.p`
-  color: green;
-  font-weight: bold;
-`;
-
-const NotVerified = styled.p`
-  color: red;
-  font-weight: bold;
+const ErrorContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
 `;
 
 const ErrorText = styled.p`
-  color: red;
+  color: #ff6b6b;
   text-align: center;
+  font-weight: bold;
+`;
+
+const SuccessContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+`;
+
+const SuccessText = styled.p`
+  color: #4ecdc4;
+  text-align: center;
+  font-weight: bold;
+`;
+
+const WarningText = styled.p`
+  color: #feca57;
+  text-align: center;
+  font-weight: bold;
 `;
 
 const ScanButton = styled.button`
