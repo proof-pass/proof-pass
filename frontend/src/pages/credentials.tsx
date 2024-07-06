@@ -248,20 +248,23 @@ const generateProof = async (ticket: TicketCredential, api: DefaultApi): Promise
 
   return (
     <PageContainer>
+      <Header>
+        <PlanetOverlay>
+          <Image src="/planet.svg" alt="Planet" width={200} height={200} />
+        </PlanetOverlay>
+        <GoBackButton onClick={() => router.push('/dashboard')}>
+          <Image src="/left-arrow.svg" alt="go back" width={20} height={20} />
+          <span>Homepage</span>
+        </GoBackButton>
+      </Header>
       <MainContainer>
-        <Header>
-          <GoBackButton onClick={() => router.push('/dashboard')}>
-            <Image src="/left-arrow.svg" alt="go back" width={20} height={20} />
-            <Title>Homepage</Title>
-          </GoBackButton>
-        </Header>
+        <Title>Ticket Credentials</Title>
         {isLoading ? (
           <LoadingIndicator>Loading...</LoadingIndicator>
         ) : error ? (
           <ErrorMessage>{error}</ErrorMessage>
         ) : (
           <CredentialSection>
-            <CredentialTitle>Ticket Credentials</CredentialTitle>
             {ticketCredentials.length > 0 ? (
               ticketCredentials.map((ticket, index) => (
                 <CredentialItem key={index}>
@@ -269,28 +272,29 @@ const generateProof = async (ticket: TicketCredential, api: DefaultApi): Promise
                   <p>Issued At: {new Date(ticket.issuedAt ?? '').toLocaleString()}</p>
                   <p>Expires At: {new Date(ticket.expireAt ?? '').toLocaleString()}</p>
                   <GenerateProofButton 
-                      onClick={() => handleGenerateProof(ticket)} 
-                      loading={!!isGeneratingProof[ticket.eventId || 'unknown']}
-                      disabled={!!isGeneratingProof[ticket.eventId || 'unknown']}
+                    onClick={() => handleGenerateProof(ticket)} 
+                    loading={!!isGeneratingProof[ticket.eventId || 'unknown']}
+                    disabled={!!isGeneratingProof[ticket.eventId || 'unknown']}
                   >
-                      {isGeneratingProof[ticket.eventId || 'unknown'] ? 'Generating...' : 'Generate Proof'}
+                    {isGeneratingProof[ticket.eventId || 'unknown'] ? 'Generating...' : 'Generate Proof'}
                   </GenerateProofButton>
                   {qrCodeValues[ticket.eventId ?? ''] && (
-                  <QRCodeContainer>
+                    <QRCodeContainer>
                       <QRCode 
                         id={`qr-code-${ticket.eventId || 'unknown'}`} 
                         value={qrCodeValues[ticket.eventId || ''] || ''}
+                        size={256}
                       />
                       <DownloadButton onClick={() => handleDownloadQR(ticket.eventId || 'unknown')}>
-                          <Image 
-                              src="/download-icon.svg" 
-                              alt="Download QR" 
-                              width={24} 
-                              height={24} 
-                          />
+                        <Image 
+                          src="/download-icon.svg" 
+                          alt="Download QR" 
+                          width={24} 
+                          height={24} 
+                        />
                       </DownloadButton>
-                  </QRCodeContainer>
-                )}
+                    </QRCodeContainer>
+                  )}
                 </CredentialItem>
               ))
             ) : (
@@ -301,27 +305,56 @@ const generateProof = async (ticket: TicketCredential, api: DefaultApi): Promise
           </CredentialSection>
         )}
       </MainContainer>
+      <Footer>
+        <Image src="/proof-summer-icon.svg" alt="Proof Summer" width={187} height={104} />
+      </Footer>
     </PageContainer>
   );
 };
 
 const PageContainer = styled.div`
   min-height: 100vh;
-  background-color: #060708;
-  padding: 24px;
-`;
-
-const MainContainer = styled.div`
-  color: #fff;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
 `;
 
 const Header = styled.header`
+  background-color: #FFD166;
+  padding: 20px;
   display: flex;
   align-items: center;
-  background-color: #060708;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+  height: 100px;
+`;
+
+const PlanetOverlay = styled.div`
+  position: absolute;
+  top: 0;
+  right: -50%;
+  width: 150%;
+  height: 200%;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  overflow: hidden;
+  
+  & > div {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  img {
+    object-fit: cover;
+    object-position: left center;
+    width: 100% !important;
+    height: 100% !important;
+    transform: translateX(-25%);
+  }
 `;
 
 const GoBackButton = styled.button`
@@ -330,29 +363,62 @@ const GoBackButton = styled.button`
   cursor: pointer;
   display: flex;
   align-items: center;
-  color: #fff;
+  color: #FF8151;
   font-size: 16px;
-  margin-right: 10px;
+  font-weight: bold;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 2;
+
+  span {
+    margin-left: 10px;
+  }
 `;
 
-const Title = styled.span`
-  font-size: 18px;
-  font-weight: 600;
-  background: linear-gradient(45deg, #ff6b6b, #feca57);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+const MainContainer = styled.main`
+  color: #000;
+  padding: 24px;
+  flex-grow: 1;
+`;
+
+const Title = styled.h1`
+  font-size: 28px;
+  font-weight: 800;
+  color: #FF8151;
+  margin: 0 0 24px 0;
+  text-align: center;
 `;
 
 const CredentialSection = styled.div`
   margin: 24px 0;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
 `;
 
-const CredentialTitle = styled.h2`
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 20px;
-  margin-bottom: 16px;
+const CredentialItem = styled.div`
+  background-color: #F5F5F5;
+  padding: 16px;
+  margin: 16px 0;
+  border-radius: 8px;
+  color: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+`;
+
+const GenerateProofButton = styled.button<{ loading?: boolean }>`
+  background-color: ${({ loading }) => (loading ? '#A3AAB8' : '#FF8151')};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  cursor: ${({ loading }) => (loading ? 'not-allowed' : 'pointer')};
+  font-weight: 600;
+  transition: all 0.3s ease;
+  margin-top: 8px;
+  &:hover {
+    opacity: ${({ loading }) => (loading ? 1 : 0.9)};
+  }
 `;
 
 const QRCodeContainer = styled.div`
@@ -373,67 +439,37 @@ const DownloadButton = styled.button`
   transform: translateY(-50%);
   padding: 8px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(0, 0, 0, 0.1);
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(0, 0, 0, 0.2);
   }
 `;
 
 const NoCredentialText = styled.p`
-  color: rgba(255, 255, 255, 0.7);
+  color: #A3AAB8;
   font-size: 16px;
 `;
 
-const Button = styled.button`
-  border: none;
-  border-radius: 12px;
-  padding: 12px 24px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  }
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
-const GenerateProofButton = styled(Button)<{ loading?: boolean }>`
-  background: ${({ loading }) => (loading ? '#888' : 'linear-gradient(45deg, #4ecdc4, #45b7d8)')};
-  color: white;
-  padding: 8px 16px;
-  font-size: 14px;
-  margin-top: 8px;
-  cursor: ${({ loading }) => (loading ? 'not-allowed' : 'pointer')};
-`;
-
-const CredentialItem = styled.div`
-  background-color: rgba(255, 255, 255, 0.1);
-  padding: 16px;
-  margin: 16px 0;
-  border-radius: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-`;
-
 const LoadingIndicator = styled.div`
-  color: #fff;
+  color: #000;
   font-size: 18px;
   text-align: center;
   margin-top: 20px;
 `;
 
 const ErrorMessage = styled.div`
-  color: red;
+  color: #FF6B6B;
   font-size: 18px;
   text-align: center;
   margin-top: 20px;
+`;
+
+const Footer = styled.footer`
+  display: flex;
+  justify-content: center;
+  padding: 20px;
 `;
 
 export default withAuth(CredentialsPage);

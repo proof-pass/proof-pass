@@ -27,21 +27,21 @@ const ContentItem = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background-color: #1e1e1e;
+    background-color: #F5F5F5;
     padding: 16px;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 `;
 
 const Label = styled.strong`
-    color: #ffffff;
+    color: #000;
     font-weight: 600;
     font-size: 16px;
 `;
 
 const Content = styled.div`
     font-size: 16px;
-    color: rgba(255, 255, 255, 0.7);
+    color: #000;
     line-height: 1.5;
 `;
 

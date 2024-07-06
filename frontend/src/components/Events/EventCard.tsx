@@ -1,234 +1,67 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import Image from 'next/image';
 import { EventCardProps } from '@/types/eventCardProps';
 
 const EventCard: React.FC<EventCardProps> = ({
-    eventId,
     eventName,
-    eventDate,
+    eventStartDate,
+    eventEndDate,
     eventUrl,
     eventDescription,
-    requestTicketCredentialsLabel,
-    onClick,
-    onScanQRCode,
-    hasTicket,
+    onClick
 }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [inputAdminCode, setInputAdminCode] = useState('');
-    const [isHostLoggedIn, setIsHostLoggedIn] = useState(false);
-
-    const toggleExpansion = () => setIsExpanded(!isExpanded);
-
-    const handleHostLogin = () => {
-        if (inputAdminCode) {
-            setIsHostLoggedIn(true);
-        }
-    };
-
-    const handleScanQRCode = () => {
-        onScanQRCode(eventId, eventName, isHostLoggedIn ? inputAdminCode : undefined);
-    };
-
     return (
-        <Card $isExpanded={isExpanded}>
-            <CardHeader onClick={toggleExpansion}>
+        <CardContainer onClick={onClick}>
+            <EventHeader>
                 <EventName>{eventName}</EventName>
-                <DateAndArrow>
-                    <EventDate>{eventDate}</EventDate>
-                    <ArrowIcon>
-                        <Image
-                            src="/down-arrow.svg"
-                            alt="Expand"
-                            width={16}
-                            height={16}
-                            style={{
-                                transform: isExpanded
-                                    ? 'rotate(180deg)'
-                                    : 'rotate(0deg)',
-                                transition: 'transform 0.3s ease',
-                            }}
-                        />
-                    </ArrowIcon>
-                </DateAndArrow>
-            </CardHeader>
-            <CardBody $isExpanded={isExpanded}>
-                <EventUrl href={eventUrl} target="_blank">
-                    Event Link
-                </EventUrl>
-                <EventDescription>{eventDescription}</EventDescription>
-                <ButtonGroup>
-                    <RequestTicketCredentialsButton
-                        onClick={() => onClick(eventId)}
-                        disabled={hasTicket}
-                    >
-                        {hasTicket ? "Ticket Obtained" : requestTicketCredentialsLabel}
-                    </RequestTicketCredentialsButton>
-                    <ScanQRCodeButton onClick={handleScanQRCode}>
-                        Scan QR Code
-                    </ScanQRCodeButton>
-                </ButtonGroup>
-                {!isHostLoggedIn ? (
-                    <HostLoginContainer>
-                        <AdminCodeInput
-                            type="text"
-                            placeholder="Enter admin code"
-                            value={inputAdminCode}
-                            onChange={(e) => setInputAdminCode(e.target.value)}
-                        />
-                        <HostLoginButton onClick={handleHostLogin}>
-                            Host Login
-                        </HostLoginButton>
-                    </HostLoginContainer>
-                ) : (
-                    <HostLoggedInButton disabled>Host Logged In</HostLoggedInButton>
-                )}
-            </CardBody>
-        </Card>
+                <EventLink href={eventUrl}>Event Link</EventLink>
+            </EventHeader>
+            <EventDate>{eventStartDate} - {eventEndDate}</EventDate>
+            <EventDescription>{eventDescription}</EventDescription>
+        </CardContainer>
     );
 };
 
-const Card = styled.div<{ $isExpanded: boolean }>`
-    background-color: #1e1e1e;
-    color: #fff;
-    border-radius: 16px;
-    margin: 24px 0;
-    padding: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    transition: all 0.3s ease;
-    transform: ${(props) => (props.$isExpanded ? 'scale(1.02)' : 'scale(1)')};
-    &:hover {
-        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
-    }
-`;
-
-const CardHeader = styled.div`
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+const CardContainer = styled.div`
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     cursor: pointer;
 `;
 
-const EventName = styled.h4`
+const EventHeader = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+`;
+
+const EventName = styled.h2`
+    font-size: 20px;
+    font-weight: 700;
+    color: #FF8151;
     margin: 0;
-    font-size: 24px;
-    font-weight: 600;
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
 `;
 
-const DateAndArrow = styled.div`
-    display: flex;
-    align-items: center;
-`;
-
-const EventDate = styled.span`
-    color: rgba(255, 255, 255, 0.7);
-    margin-right: 12px;
+const EventLink = styled.a`
+    color: #5EB7FF;
     font-size: 14px;
-`;
-
-const ArrowIcon = styled.div`
-    display: flex;
-    align-items: center;
-`;
-
-const CardBody = styled.div<{ $isExpanded: boolean }>`
-    display: ${(props) => (props.$isExpanded ? 'block' : 'none')};
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-`;
-
-const EventUrl = styled.a`
-    color: #4ecdc4;
+    font-weight: 600;
     text-decoration: none;
-    margin-bottom: 16px;
-    display: inline-block;
-    font-weight: 500;
-    &:hover {
-        text-decoration: underline;
-    }
+`;
+
+const EventDate = styled.p`
+    font-size: 12px;
+    color: #A3AAB8;
+    margin-bottom: 10px;
 `;
 
 const EventDescription = styled.p`
-    margin: 16px 0;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.8);
-`;
-
-const ButtonGroup = styled.div`
-    display: flex;
-    justify-content: space-between;
-    margin-top: 24px;
-`;
-
-const Button = styled.button`
-    border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-    &:active {
-        transform: translateY(0);
-    }
-`;
-
-const HostLoggedInButton = styled(Button)`
-    background: #4ecdc4;
-    color: white;
-    opacity: 0.7;
-    cursor: not-allowed;
-    width: 100%;
-`;
-
-const RequestTicketCredentialsButton = styled(Button)<{ disabled: boolean }>`
-    background: ${props => props.disabled ? '#888' : 'linear-gradient(45deg, #ff6b6b, #feca57)'};
-    color: white;
-    opacity: ${props => props.disabled ? 0.7 : 1};
-    cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-
-    &:hover {
-        transform: ${props => props.disabled ? 'none' : 'translateY(-2px)'};
-        box-shadow: ${props => props.disabled ? 'none' : '0 4px 12px rgba(0, 0, 0, 0.2)'};
-    }
-`;
-
-const ScanQRCodeButton = styled(Button)`
-    background: linear-gradient(45deg, #4ecdc4, #45b7d8);
-    color: white;
-`;
-
-const HostLoginContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    margin-top: 24px;
-`;
-
-const AdminCodeInput = styled.input`
-    padding: 12px;
-    margin-bottom: 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    font-size: 16px;
-    &:focus {
-        outline: none;
-        border-color: #4ecdc4;
-    }
-`;
-
-const HostLoginButton = styled(Button)`
-    background: linear-gradient(45deg, #45b7d8, #4ecdc4);
-    color: white;
+    font-size: 14px;
+    color: rgba(100, 100, 100, 0.8);
+    line-height: 1.4;
 `;
 
 export default EventCard;

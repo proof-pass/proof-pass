@@ -131,7 +131,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     <Input
                         id="email"
                         type="email"
-                        placeholder="Enter your email address"
+                        placeholder="enter email address"
                         value={email}
                         onChange={handleInputChange}
                         onKeyDown={handleKeyDown}
@@ -149,7 +149,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     <Input
                         id="confirmation-code"
                         type="text"
-                        placeholder="Enter confirmation code"
+                        placeholder="enter confirmation code"
                         value={code}
                         onChange={handleInputChange}
                     />
@@ -180,41 +180,37 @@ const Form = styled.form`
     display: flex;
     flex-direction: column;
     gap: 16px;
-    background-color: #1e1e1e;
-    color: #fff;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    width: 100%;
 `;
 
 const Input = styled.input`
     padding: 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    border-radius: 8px;
+    border: 1px solid #D4D4D4;
+    background-color: #F5F5F5;
+    color: #000;
     font-size: 16px;
+    &::placeholder {
+        color: #A3AAB8;
+    }
     &:focus {
         outline: none;
-        border-color: #4ecdc4;
+        border-color: #5EB7FF;
     }
 `;
 
 const Button = styled.button`
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 12px 24px;
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s ease;
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
+    background-color: #FF8151;
     color: white;
+    font-size: 16px;
     &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-    &:active {
-        transform: translateY(0);
+        opacity: 0.9;
     }
     &:disabled {
         opacity: 0.7;
@@ -223,15 +219,16 @@ const Button = styled.button`
 `;
 
 const CountdownButton = styled(Button)`
-    background: linear-gradient(45deg, #4ecdc4, #45b7d8);
+    background-color: #A3AAB8;
     opacity: 0.7;
     cursor: not-allowed;
 `;
 
 const Message = styled.p`
-    color: #ff6b6b;
+    color: #FF6B6B;
     font-size: 14px;
     margin: 0;
+    text-align: center;
 `;
 
 export default LoginForm;

@@ -39,15 +39,15 @@ const CardContainer = styled.article`
     max-width: 400px;
     max-height: calc(100vh - 40px);
     padding: 24px;
-    background-color: #1e1e1e;
+    background-color: #fff;
     border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     text-align: center;
-    color: #fff;
+    color: #000;
     transition: all 0.3s ease;
     overflow-y: auto;
     &:hover {
-        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
     }
 `;
 
@@ -70,16 +70,14 @@ const CloseButton = styled.button`
 const CardTitle = styled.h2`
     margin-top: 24px;
     font-size: 24px;
-    font-weight: 600;
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+    color: #FF8151;
 `;
 
 const CardDescription = styled.p`
     margin-top: 16px;
     font-size: 16px;
-    color: rgba(255, 255, 255, 0.7);
+    color: #A3AAB8;
 `;
 
 const CardImage = styled.div`
@@ -92,15 +90,15 @@ const LogoutButton = styled.button`
     font-weight: 600;
     justify-content: center;
     align-items: center;
-    border-radius: 12px;
+    border-radius: 8px;
     box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
-    background-color: #45b7d8;
+    background-color: #FF8151;
     padding: 12px 24px;
     color: #fff;
     cursor: pointer;
     border: none;
     &:hover {
-        background-color: #3ca7c8;
+        opacity: 0.9;
     }
 `;
 

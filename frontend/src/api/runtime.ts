@@ -13,7 +13,7 @@
  */
 
 
-export const BASE_PATH = "https://api.proofpass.io/v1".replace(/\/+$/, "");
+export const BASE_PATH = "http://localhost:3000/v1".replace(/\/+$/, "");
 
 export interface ConfigurationParameters {
     basePath?: string; // override base path

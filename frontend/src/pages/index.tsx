@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import Image from 'next/image';
 import LoginForm from '../components/LoginForm';
 import PasswordVerification from '../components/PasswordVerification';
 import { useRouter } from 'next/router';
 
 const HomePage: React.FC = () => {
-    const [showPasswordVerification, setShowPasswordVerification] =
-        useState(false);
-    const [encryptedInternalNullifier, setEncryptedInternalNullifier] =
-        useState('');
-
+    const [showPasswordVerification, setShowPasswordVerification] = useState(false);
+    const [encryptedInternalNullifier, setEncryptedInternalNullifier] = useState('');
     const router = useRouter();
 
     const handlePasswordVerificationRequired = (nullifier: string) => {
@@ -24,6 +22,12 @@ const HomePage: React.FC = () => {
 
     return (
         <Container>
+            <Header>
+                <PlanetOverlay>
+                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
+                </PlanetOverlay>
+                <Title>Proof Pass</Title>
+            </Header>
             <Card>
                 {showPasswordVerification ? (
                     <PasswordVerification
@@ -32,62 +36,115 @@ const HomePage: React.FC = () => {
                     />
                 ) : (
                     <>
-                        <Header>
-                            <Title>Proof Pass</Title>
-                            <Instruction>
-                                Enter your email to log in or register
-                            </Instruction>
-                        </Header>
+                        <Instruction>
+                            Enter your email to log in or register
+                        </Instruction>
                         <LoginForm
-                            onPasswordVerificationRequired={
-                                handlePasswordVerificationRequired
-                            }
+                            onPasswordVerificationRequired={handlePasswordVerificationRequired}
                         />
                     </>
                 )}
             </Card>
+            <LogoContainer>
+                <TopLogo>
+                    <Image src="/proof-summer-icon.svg" alt="Proof Summer" width={187} height={104} />
+                </TopLogo>
+                <BottomLogos>
+                    <Image src="/nebra-logo.svg" alt="Nebra" width={80} height={30} />
+                    <Image src="/galxe-logo.svg" alt="Galxe" width={80} height={30} />
+                </BottomLogos>
+            </LogoContainer>
         </Container>
     );
 };
 
 const Container = styled.main`
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
+    background-color: #fff;
+    color: #000;
+    max-width: 480px;
     min-height: 100vh;
-    background-color: #121212;
-    padding: 20px;
+    margin: 0 auto;
+    padding: 0;
     font-family: 'Inter', sans-serif;
-`;
-
-const Card = styled.div`
-    background-color: #1e1e1e;
-    color: #fff;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-    width: 100%;
-    max-width: 400px;
+    display: flex;
+    flex-direction: column;
 `;
 
 const Header = styled.header`
-    text-align: center;
-    margin-bottom: 24px;
+    background-color: #FFD166;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    height: 100px; 
+`;
+
+const PlanetOverlay = styled.div`
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200%;
+    height: 200%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    & > div {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    img {
+        object-fit: cover;
+        width: 100% !important;
+        height: 100% !important;
+    }
 `;
 
 const Title = styled.h1`
     font-size: 28px;
     font-weight: 800;
+    color: #FF8151;
     margin: 0;
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    z-index: 2;
+    position: relative;
+`;
+
+const Card = styled.div`
+    background-color: #fff;
+    color: #000;
+    padding: 24px;
+    width: 100%;
+    flex-grow: 1;
 `;
 
 const Instruction = styled.p`
-    margin: 16px 0 0;
+    margin: 16px 0 20px;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.8);
+    color: #A3AAB8;
+    font-size: 14px;
+    text-align: center;
+`;
+
+const LogoContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: auto;
+    padding: 20px;
+`;
+
+const TopLogo = styled.div`
+    margin-bottom: 20px;
+`;
+
+const BottomLogos = styled.div`
+    display: flex;
+    justify-content: center;
+    gap: 40px;
 `;
 
 export default HomePage;

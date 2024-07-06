@@ -644,7 +644,7 @@
     ethers "^6.12.1"
     hardhat "^2.22.3"
 
-"@galxe-identity-protocol/sdk@^1.0.9":
+"@galxe-identity-protocol/sdk@^1.0.8":
   version "1.0.9"
   resolved "https://registry.npmjs.org/@galxe-identity-protocol/sdk/-/sdk-1.0.9.tgz"
   integrity sha512-0raElOS78sDEK3CuoEMcs89a9i52wZJbEXvrhqdySzYr+dl5RqzlWhwusNeJDrZ/fwYNt0uFody0VcTwo4ygJA==
@@ -3553,6 +3553,11 @@ hoopy@^0.1.4:
   version "0.1.4"
   resolved "https://registry.npmjs.org/hoopy/-/hoopy-0.1.4.tgz"
   integrity sha512-HRcs+2mr52W0K+x8RzcLzuPPmVIKMSv97RGHy0Ea9y/mpcaK+xTrjICA04KAHi4GRzxliNqNJEFYWHghy3rSfQ==
+
+html5-qrcode@^2.3.8:
+  version "2.3.8"
+  resolved "https://registry.npmjs.org/html5-qrcode/-/html5-qrcode-2.3.8.tgz"
+  integrity sha512-jsr4vafJhwoLVEDW3n1KvPnCCXWaQfRng0/EEYk1vNcQGcG/htAdhJX0be8YyqMoSz7+hZvOZSTAepsabiuhiQ==
 
 http-errors@2.0.0:
   version "2.0.0"
