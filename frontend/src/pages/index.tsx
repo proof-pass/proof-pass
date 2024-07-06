@@ -23,9 +23,6 @@ const HomePage: React.FC = () => {
     return (
         <Container>
             <Header>
-                <PlanetOverlay>
-                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
-                </PlanetOverlay>
                 <Title>Proof Pass</Title>
             </Header>
             <Card>
@@ -78,30 +75,11 @@ const Header = styled.header`
     justify-content: center;
     position: relative;
     overflow: hidden;
-    height: 100px; 
-`;
-
-const PlanetOverlay = styled.div`
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 200%;
-    height: 200%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    
-    & > div {
-        width: 100% !important;
-        height: 100% !important;
-    }
-    
-    img {
-        object-fit: cover;
-        width: 100% !important;
-        height: 100% !important;
-    }
+    width: 100%;
+    min-height: 100px;
+    background-image: url('/planet-center.svg');
+    background-size: cover;
+    background-position: center;
 `;
 
 const Title = styled.h1`

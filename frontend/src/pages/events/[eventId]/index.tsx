@@ -157,7 +157,7 @@ const EventDetailPage: React.FC = () => {
             }
         } catch (error) {
             console.error('Error requesting credential:', error);
-            handleError('You haven&apos;t registered for this event');
+            handleError("You haven't registered for this event");
         }
     };
 
@@ -332,7 +332,7 @@ const EventDetailPage: React.FC = () => {
                     <span>Events</span>
                 </GoBackButton>
                 <PlanetOverlay>
-                    <Image src="/planet.svg" alt="Planet" layout="fill" objectFit="contain" />
+                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
                 </PlanetOverlay>
             </Header>
             {errorMessage && <ErrorBanner>{errorMessage}</ErrorBanner>}

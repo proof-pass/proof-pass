@@ -293,7 +293,7 @@ const CheckInPage: React.FC = () => {
           <span>Event Details</span>
         </GoBackButton>
         <PlanetOverlay>
-          <Image src="/planet.svg" alt="Planet" layout="fill" objectFit="contain" />
+          <Image src="/planet.svg" alt="Planet" width={200} height={200} />
         </PlanetOverlay>
       </Header>
       {showLoginMessage && (
