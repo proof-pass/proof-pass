@@ -52,65 +52,71 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
     };
 
     return (
-        <Form onSubmit={handleVerifyAndCachePassword}>
-            <Instruction>
-                Please enter your password below to continue to your dashboard
-            </Instruction>
-            <PasswordInput>
-                <Input
-                    type={passwordVisible ? 'text' : 'password'}
-                    id="password"
-                    placeholder="Enter password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <VisibilityToggle onClick={togglePasswordVisibility}>
-                    <Image
-                        src={
-                            passwordVisible
-                                ? '/hidden-icon.svg'
-                                : '/visible-icon.svg'
-                        }
-                        alt={
-                            passwordVisible
-                                ? 'hide password'
-                                : 'reveal password'
-                        }
-                        width={20}
-                        height={20}
+        <Card>
+            <Form onSubmit={handleVerifyAndCachePassword}>
+                <Instruction>
+                    Please enter your password below to continue to your dashboard
+                </Instruction>
+                <PasswordInput>
+                    <Input
+                        type={passwordVisible ? 'text' : 'password'}
+                        id="password"
+                        placeholder="Enter password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                     />
-                </VisibilityToggle>
-            </PasswordInput>
-            <Button type="submit">Continue</Button>
-            {message && <Message>{message}</Message>}
-        </Form>
+                    <VisibilityToggle onClick={togglePasswordVisibility}>
+                        <Image
+                            src={
+                                passwordVisible
+                                    ? '/hidden-icon.svg'
+                                    : '/visible-icon.svg'
+                            }
+                            alt={
+                                passwordVisible
+                                    ? 'hide password'
+                                    : 'reveal password'
+                            }
+                            width={20}
+                            height={20}
+                        />
+                    </VisibilityToggle>
+                </PasswordInput>
+                <Button type="submit">Continue</Button>
+                {message && <Message>{message}</Message>}
+            </Form>
+        </Card>
     );
 };
+
+const Card = styled.div`
+    background-color: #fff;
+    color: #000;
+    width: 100%;
+    flex-grow: 1;
+`;
 
 const Form = styled.form`
     display: flex;
     flex-direction: column;
     gap: 16px;
-    background-color: #1e1e1e;
-    color: #fff;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    width: 100%;
 `;
 
 const Instruction = styled.p`
-    margin: 0;
-    line-height: 150%;
+    margin: 16px 0 20px;
+    line-height: 1.6;
+    color: #A3AAB8;
+    font-size: 14px;
     text-align: center;
-    color: rgba(255, 255, 255, 0.7);
 `;
 
 const PasswordInput = styled.div`
     display: flex;
     align-items: center;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    border: 1px solid #D4D4D4;
+    background-color: #F5F5F5;
     padding: 0 12px;
 `;
 
@@ -119,9 +125,12 @@ const Input = styled.input`
     padding: 12px;
     background: transparent;
     border: none;
-    color: #fff;
+    color: #000;
     font-size: 16px;
     outline: none;
+    &::placeholder {
+        color: #A3AAB8;
+    }
     &:focus {
         outline: none;
     }
@@ -138,26 +147,24 @@ const VisibilityToggle = styled.button`
 
 const Button = styled.button`
     border: none;
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 12px 24px;
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s ease;
-    background: linear-gradient(45deg, #ff6b6b, #feca57);
+    background-color: #FF8151;
     color: white;
+    font-size: 16px;
     &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-    &:active {
-        transform: translateY(0);
+        opacity: 0.9;
     }
 `;
 
 const Message = styled.p`
-    color: #ff6b6b;
+    color: #FF6B6B;
     font-size: 14px;
     margin: 0;
+    text-align: center;
 `;
 
 export default PasswordVerification;

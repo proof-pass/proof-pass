@@ -123,10 +123,10 @@ const DetailItem = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background-color: #1e1e1e;
+    background-color: #F5F5F5;
     padding: 16px;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 `;
 
 const SecretValue = styled.div`
@@ -134,7 +134,7 @@ const SecretValue = styled.div`
     align-items: center;
     gap: 8px;
     font-size: 16px;
-    color: rgba(255, 255, 255, 0.7);
+    color: #000;
     overflow-x: auto;
     white-space: nowrap;
 
@@ -143,17 +143,17 @@ const SecretValue = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: #2e2e2e;
+        background: #E0E0E0;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: #888;
+        background: #A3AAB8;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: #555;
+        background: #8C8C8C;
     }
 `;
 
@@ -163,26 +163,22 @@ const SecretContent = styled.span`
 `;
 
 const RevealButton = styled.button`
-    background: linear-gradient(45deg, #4ecdc4, #45b7d8);
+    background-color: #5EB7FF;
     color: #fff;
     border: none;
     padding: 8px 16px;
     cursor: pointer;
-    border-radius: 12px;
+    border-radius: 8px;
     white-space: nowrap;
     font-weight: 600;
     transition: all 0.3s ease;
     &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-    &:active {
-        transform: translateY(0);
+        opacity: 0.9;
     }
 `;
 
 const Label = styled.strong`
-    color: #ffffff;
+    color: #000;
     font-weight: 600;
     font-size: 16px;
 `;
@@ -192,31 +188,30 @@ const DetailContent = styled.div`
     white-space: nowrap;
     max-width: 100%;
     padding-bottom: 8px;
+    color: #000;
 
     &::-webkit-scrollbar {
         height: 8px;
     }
 
     &::-webkit-scrollbar-track {
-        background: #2e2e2e;
+        background: #E0E0E0;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: #888;
+        background: #A3AAB8;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: #555;
+        background: #8C8C8C;
     }
 `;
 
 const Message = styled.p`
-    color: #e63946;
-    font:
-        500 14px/150% 'Inter',
-        sans-serif;
+    color: #FF6B6B;
+    font: 500 14px/150% 'Inter', sans-serif;
     margin: 0;
 `;
 

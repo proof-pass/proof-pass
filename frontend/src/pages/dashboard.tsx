@@ -5,6 +5,7 @@ import ProfileOverlay from '@/components/OverlayCards/ProfileOverlay';
 import { useRouter } from 'next/router';
 import { IndexMenuItemsProps } from '@/types/indexMenuItemsProps';
 import withAuth from '@/components/withAuth';
+import Image from 'next/image';
 
 const menuData = [
     { label: 'About' },
@@ -42,15 +43,26 @@ const DashboardPage: React.FC = () => {
 
     return (
         <DashboardContainer>
-            <Nav>
-                {menuData.map((item, index) => (
-                    <MenuItem
-                        key={index}
-                        label={item.label}
-                        onClick={() => handleMenuItemClick(item.label)}
-                    />
-                ))}
-            </Nav>
+            <Header>
+                <PlanetOverlay>
+                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
+                </PlanetOverlay>
+                <Nav>
+                    {menuData.map((item, index) => (
+                        <MenuItem
+                            key={index}
+                            label={item.label}
+                            onClick={() => handleMenuItemClick(item.label)}
+                        />
+                    ))}
+                </Nav>
+            </Header>
+            <Content>
+                {/* Placeholder for future development */}
+            </Content>
+            <Footer>
+                <Image src="/proof-summer-icon.svg" alt="Proof Summer" width={187} height={104} />
+            </Footer>
             {activeOverlay && (
                 <OverlayContainer>
                     {activeOverlay === 'About' && (
@@ -65,6 +77,7 @@ const DashboardPage: React.FC = () => {
                     )}
                 </OverlayContainer>
             )}
+
         </DashboardContainer>
     );
 };
@@ -74,22 +87,62 @@ const MenuItem: React.FC<IndexMenuItemsProps> = ({ label, onClick }) => {
 };
 
 const DashboardContainer = styled.div`
-    min-height: 100vh;
-    color: #fff;
-    position: relative;
+    background-color: #fff;
+    color: #000;
     max-width: 480px;
+    min-height: 100vh;
     margin: 0 auto;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+`;
+
+const Header = styled.header`
+    background-color: #FFD166;
     padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    height: 100px; 
+`;
+
+const PlanetOverlay = styled.div`
+    position: absolute;
+    top: 0;
+    right: -50%;
+    width: 150%;
+    height: 200%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    overflow: hidden;
+    
+    & > div {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    img {
+        object-fit: cover;
+        object-position: left center;
+        width: 100% !important;
+        height: 100% !important;
+        transform: translateX(-25%);
+    }
 `;
 
 const Nav = styled.nav`
     display: flex;
     justify-content: space-around;
     font-size: 16px;
-    color: var(--info-base, #fff);
+    color: #000;
     font-weight: 400;
     line-height: 150%;
-    padding: 20px 0;
+    width: 100%;
+    z-index: 2;
 `;
 
 const NavItem = styled.span`
@@ -100,9 +153,22 @@ const NavItem = styled.span`
     gap: 8px;
     white-space: nowrap;
     cursor: pointer;
+    color: #000;
     &:hover {
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
     }
+`;
+
+const Content = styled.main`
+    flex-grow: 1;
+    padding: 20px;
+`;
+
+const Footer = styled.footer`
+    display: flex;
+    justify-content: center;
+    padding: 20px;
 `;
 
 const OverlayContainer = styled.div`
