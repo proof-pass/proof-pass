@@ -58,7 +58,7 @@ const EventsPage: React.FC = () => {
                     <span>Home</span>
                 </GoBackButton>
                 <PlanetOverlay>
-                    <Image src="/planet.svg" alt="Planet" layout="fill" objectFit="contain" />
+                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
                 </PlanetOverlay>
             </Header>
             {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
@@ -107,14 +107,14 @@ flex-direction: column;
 `;
 
 const Header = styled.header`
-background-color: #FFD166;
-padding: 20px;
-display: flex;
-align-items: center;
-justify-content: center;
-position: relative;
-overflow: hidden;
-height: 100px; 
+    background-color: #FFD166;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    height: 100px; 
 `;
 
 const GoBackButton = styled.button`
@@ -137,28 +137,28 @@ span {
 `;
 
 const PlanetOverlay = styled.div`
-position: absolute;
-top: 0;
-right: -50%;
-width: 150%;
-height: 200%;
-display: flex;
-justify-content: flex-end;
-align-items: center;
-overflow: hidden;
-
-& > div {
-    width: 100% !important;
-    height: 100% !important;
-}
-
-img {
-    object-fit: cover;
-    object-position: left center;
-    width: 100% !important;
-    height: 100% !important;
-    transform: translateX(-25%);
-}
+    position: absolute;
+    top: 0;
+    right: -50%;
+    width: 150%;
+    height: 200%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    overflow: hidden;
+    
+    & > div {
+        width: 100% !important;
+        height: 100% !important;
+    }
+    
+    img {
+        object-fit: cover;
+        object-position: left center;
+        width: 100% !important;
+        height: 100% !important;
+        transform: translateX(-25%);
+    }
 `;
 
 const EventList = styled.div`
