@@ -6,8 +6,10 @@ import PasswordVerification from '../components/PasswordVerification';
 import { useRouter } from 'next/router';
 
 const HomePage: React.FC = () => {
-    const [showPasswordVerification, setShowPasswordVerification] = useState(false);
-    const [encryptedInternalNullifier, setEncryptedInternalNullifier] = useState('');
+    const [showPasswordVerification, setShowPasswordVerification] =
+        useState(false);
+    const [encryptedInternalNullifier, setEncryptedInternalNullifier] =
+        useState('');
     const router = useRouter();
 
     const handlePasswordVerificationRequired = (nullifier: string) => {
@@ -37,18 +39,35 @@ const HomePage: React.FC = () => {
                             Enter your email to log in or register
                         </Instruction>
                         <LoginForm
-                            onPasswordVerificationRequired={handlePasswordVerificationRequired}
+                            onPasswordVerificationRequired={
+                                handlePasswordVerificationRequired
+                            }
                         />
                     </>
                 )}
             </Card>
             <LogoContainer>
                 <TopLogo>
-                    <Image src="/proof-summer-icon.svg" alt="Proof Summer" width={187} height={104} />
+                    <Image
+                        src="/proof-summer-icon.svg"
+                        alt="Proof Summer"
+                        width={187}
+                        height={104}
+                    />
                 </TopLogo>
                 <BottomLogos>
-                    <Image src="/nebra-logo.svg" alt="Nebra" width={80} height={30} />
-                    <Image src="/galxe-logo.svg" alt="Galxe" width={80} height={30} />
+                    <Image
+                        src="/nebra-logo.svg"
+                        alt="Nebra"
+                        width={80}
+                        height={30}
+                    />
+                    <Image
+                        src="/galxe-logo.svg"
+                        alt="Galxe"
+                        width={80}
+                        height={30}
+                    />
                 </BottomLogos>
             </LogoContainer>
         </Container>
@@ -68,7 +87,7 @@ const Container = styled.main`
 `;
 
 const Header = styled.header`
-    background-color: #FFD166;
+    background-color: #ffd166;
     padding: 20px;
     display: flex;
     align-items: center;
@@ -85,7 +104,7 @@ const Header = styled.header`
 const Title = styled.h1`
     font-size: 28px;
     font-weight: 800;
-    color: #FF8151;
+    color: #ff8151;
     margin: 0;
     z-index: 2;
     position: relative;
@@ -102,7 +121,7 @@ const Card = styled.div`
 const Instruction = styled.p`
     margin: 16px 0 20px;
     line-height: 1.6;
-    color: #A3AAB8;
+    color: #a3aab8;
     font-size: 14px;
     text-align: center;
 `;

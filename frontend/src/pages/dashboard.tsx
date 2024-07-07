@@ -45,7 +45,12 @@ const DashboardPage: React.FC = () => {
         <DashboardContainer>
             <Header>
                 <PlanetOverlay>
-                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
+                    <Image
+                        src="/planet.svg"
+                        alt="Planet"
+                        width={200}
+                        height={200}
+                    />
                 </PlanetOverlay>
                 <Nav>
                     {menuData.map((item, index) => (
@@ -57,11 +62,14 @@ const DashboardPage: React.FC = () => {
                     ))}
                 </Nav>
             </Header>
-            <Content>
-                {/* Placeholder for future development */}
-            </Content>
+            <Content>{/* Placeholder for future development */}</Content>
             <Footer>
-                <Image src="/proof-summer-icon.svg" alt="Proof Summer" width={187} height={104} />
+                <Image
+                    src="/proof-summer-icon.svg"
+                    alt="Proof Summer"
+                    width={187}
+                    height={104}
+                />
             </Footer>
             {activeOverlay && (
                 <OverlayContainer>
@@ -77,7 +85,6 @@ const DashboardPage: React.FC = () => {
                     )}
                 </OverlayContainer>
             )}
-
         </DashboardContainer>
     );
 };
@@ -99,14 +106,14 @@ const DashboardContainer = styled.div`
 `;
 
 const Header = styled.header`
-    background-color: #FFD166;
+    background-color: #ffd166;
     padding: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
-    height: 100px; 
+    height: 100px;
 `;
 
 const PlanetOverlay = styled.div`
@@ -119,12 +126,12 @@ const PlanetOverlay = styled.div`
     justify-content: flex-end;
     align-items: center;
     overflow: hidden;
-    
+
     & > div {
         width: 100% !important;
         height: 100% !important;
     }
-    
+
     img {
         object-fit: cover;
         object-position: left center;

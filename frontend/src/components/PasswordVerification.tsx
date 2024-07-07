@@ -55,7 +55,8 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
         <Card>
             <Form onSubmit={handleVerifyAndCachePassword}>
                 <Instruction>
-                    Please enter your password below to continue to your dashboard
+                    Please enter your password below to continue to your
+                    dashboard
                 </Instruction>
                 <PasswordInput>
                     <Input
@@ -106,7 +107,7 @@ const Form = styled.form`
 const Instruction = styled.p`
     margin: 16px 0 20px;
     line-height: 1.6;
-    color: #A3AAB8;
+    color: #a3aab8;
     font-size: 14px;
     text-align: center;
 `;
@@ -115,8 +116,8 @@ const PasswordInput = styled.div`
     display: flex;
     align-items: center;
     border-radius: 8px;
-    border: 1px solid #D4D4D4;
-    background-color: #F5F5F5;
+    border: 1px solid #d4d4d4;
+    background-color: #f5f5f5;
     padding: 0 12px;
 `;
 
@@ -129,7 +130,7 @@ const Input = styled.input`
     font-size: 16px;
     outline: none;
     &::placeholder {
-        color: #A3AAB8;
+        color: #a3aab8;
     }
     &:focus {
         outline: none;
@@ -152,7 +153,7 @@ const Button = styled.button`
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s ease;
-    background-color: #FF8151;
+    background-color: #ff8151;
     color: white;
     font-size: 16px;
     &:hover {
@@ -161,7 +162,7 @@ const Button = styled.button`
 `;
 
 const Message = styled.p`
-    color: #FF6B6B;
+    color: #ff6b6b;
     font-size: 14px;
     margin: 0;
     text-align: center;

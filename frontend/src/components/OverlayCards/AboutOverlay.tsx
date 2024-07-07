@@ -27,7 +27,7 @@ const ContentItem = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background-color: #F5F5F5;
+    background-color: #f5f5f5;
     padding: 16px;
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);

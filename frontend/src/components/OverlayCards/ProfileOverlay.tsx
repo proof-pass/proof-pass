@@ -123,7 +123,7 @@ const DetailItem = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background-color: #F5F5F5;
+    background-color: #f5f5f5;
     padding: 16px;
     border-radius: 8px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
@@ -143,17 +143,17 @@ const SecretValue = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: #E0E0E0;
+        background: #e0e0e0;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: #A3AAB8;
+        background: #a3aab8;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: #8C8C8C;
+        background: #8c8c8c;
     }
 `;
 
@@ -163,7 +163,7 @@ const SecretContent = styled.span`
 `;
 
 const RevealButton = styled.button`
-    background-color: #5EB7FF;
+    background-color: #5eb7ff;
     color: #fff;
     border: none;
     padding: 8px 16px;
@@ -195,23 +195,25 @@ const DetailContent = styled.div`
     }
 
     &::-webkit-scrollbar-track {
-        background: #E0E0E0;
+        background: #e0e0e0;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb {
-        background: #A3AAB8;
+        background: #a3aab8;
         border-radius: 4px;
     }
 
     &::-webkit-scrollbar-thumb:hover {
-        background: #8C8C8C;
+        background: #8c8c8c;
     }
 `;
 
 const Message = styled.p`
-    color: #FF6B6B;
-    font: 500 14px/150% 'Inter', sans-serif;
+    color: #ff6b6b;
+    font:
+        500 14px/150% 'Inter',
+        sans-serif;
     margin: 0;
 `;
 
