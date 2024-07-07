@@ -71,13 +71,13 @@ const CardTitle = styled.h2`
     margin-top: 24px;
     font-size: 24px;
     font-weight: 800;
-    color: #FF8151;
+    color: #ff8151;
 `;
 
 const CardDescription = styled.p`
     margin-top: 16px;
     font-size: 16px;
-    color: #A3AAB8;
+    color: #a3aab8;
 `;
 
 const CardImage = styled.div`
@@ -92,7 +92,7 @@ const LogoutButton = styled.button`
     align-items: center;
     border-radius: 8px;
     box-shadow: 0px 1px 2px 0px rgba(0, 0, 0, 0.05);
-    background-color: #FF8151;
+    background-color: #ff8151;
     padding: 12px 24px;
     color: #fff;
     cursor: pointer;

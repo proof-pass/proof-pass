@@ -15,15 +15,20 @@ const EventsPage: React.FC = () => {
 
     const api = useMemo(() => {
         const token = getToken();
-        const customFetch: FetchAPI = async (input: RequestInfo, init?: RequestInit) => {
+        const customFetch: FetchAPI = async (
+            input: RequestInfo,
+            init?: RequestInit,
+        ) => {
             if (!init) init = {};
             if (!init.headers) init.headers = {};
-            if (token) (init.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+            if (token)
+                (init.headers as Record<string, string>)['Authorization'] =
+                    `Bearer ${token}`;
             return fetch(input, init);
         };
         const config = new Configuration({
             accessToken: token,
-            fetchApi: customFetch
+            fetchApi: customFetch,
         });
         return new DefaultApi(config);
     }, []);
@@ -54,11 +59,21 @@ const EventsPage: React.FC = () => {
         <MainContainer>
             <Header>
                 <GoBackButton onClick={() => router.push('/dashboard')}>
-                    <Image src="/left-arrow.svg" alt="go back" width={20} height={20} />
+                    <Image
+                        src="/left-arrow.svg"
+                        alt="go back"
+                        width={20}
+                        height={20}
+                    />
                     <span>Home</span>
                 </GoBackButton>
                 <PlanetOverlay>
-                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
+                    <Image
+                        src="/planet.svg"
+                        alt="Planet"
+                        width={200}
+                        height={200}
+                    />
                 </PlanetOverlay>
             </Header>
             {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
@@ -67,7 +82,7 @@ const EventsPage: React.FC = () => {
                     <LoadingIndicator>Loading events...</LoadingIndicator>
                 ) : eventList.length > 0 ? (
                     eventList.map((event) => (
-                        <EventCard 
+                        <EventCard
                             key={event.id}
                             eventId={event.id ?? ''}
                             eventName={event.name ?? ''}
@@ -83,7 +98,7 @@ const EventsPage: React.FC = () => {
                 )}
             </EventList>
             <SVGIconSpace>
-                <Image 
+                <Image
                     src="/proof-summer-icon.svg"
                     alt="proof-summer"
                     width={187}
@@ -95,45 +110,45 @@ const EventsPage: React.FC = () => {
 };
 
 const MainContainer = styled.div`
-background-color: #fff;
-color: #000;
-max-width: 480px;
-min-height: 100vh;
-margin: 0 auto;
-padding: 0;
-font-family: 'Inter', sans-serif;
-display: flex;
-flex-direction: column;
+    background-color: #fff;
+    color: #000;
+    max-width: 480px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
 `;
 
 const Header = styled.header`
-    background-color: #FFD166;
+    background-color: #ffd166;
     padding: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
-    height: 100px; 
+    height: 100px;
 `;
 
 const GoBackButton = styled.button`
-background: none;
-border: none;
-cursor: pointer;
-display: flex;
-align-items: center;
-color: #FF8151;
-font-size: 16px;
-font-weight: bold;
-position: absolute;
-top: 20px;
-left: 20px;
-z-index: 2;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: #ff8151;
+    font-size: 16px;
+    font-weight: bold;
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 2;
 
-span {
-  margin-left: 10px;
-}
+    span {
+        margin-left: 10px;
+    }
 `;
 
 const PlanetOverlay = styled.div`
@@ -146,12 +161,12 @@ const PlanetOverlay = styled.div`
     justify-content: flex-end;
     align-items: center;
     overflow: hidden;
-    
+
     & > div {
         width: 100% !important;
         height: 100% !important;
     }
-    
+
     img {
         object-fit: cover;
         object-position: left center;

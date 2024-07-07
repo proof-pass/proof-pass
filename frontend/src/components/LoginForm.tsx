@@ -186,16 +186,16 @@ const Form = styled.form`
 const Input = styled.input`
     padding: 12px;
     border-radius: 8px;
-    border: 1px solid #D4D4D4;
-    background-color: #F5F5F5;
+    border: 1px solid #d4d4d4;
+    background-color: #f5f5f5;
     color: #000;
     font-size: 16px;
     &::placeholder {
-        color: #A3AAB8;
+        color: #a3aab8;
     }
     &:focus {
         outline: none;
-        border-color: #5EB7FF;
+        border-color: #5eb7ff;
     }
 `;
 
@@ -206,7 +206,7 @@ const Button = styled.button`
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s ease;
-    background-color: #FF8151;
+    background-color: #ff8151;
     color: white;
     font-size: 16px;
     &:hover {
@@ -219,13 +219,13 @@ const Button = styled.button`
 `;
 
 const CountdownButton = styled(Button)`
-    background-color: #A3AAB8;
+    background-color: #a3aab8;
     opacity: 0.7;
     cursor: not-allowed;
 `;
 
 const Message = styled.p`
-    color: #FF6B6B;
+    color: #ff6b6b;
     font-size: 14px;
     margin: 0;
     text-align: center;

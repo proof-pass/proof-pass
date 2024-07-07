@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
-    transpilePackages: [
-        '@galxe-identity-protocol/sdk',
-      ],
+    transpilePackages: ['@galxe-identity-protocol/sdk'],
     compiler: {
         styledComponents: true,
     },

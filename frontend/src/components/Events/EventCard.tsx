@@ -8,7 +8,7 @@ const EventCard: React.FC<EventCardProps> = ({
     eventEndDate,
     eventUrl,
     eventDescription,
-    onClick
+    onClick,
 }) => {
     return (
         <CardContainer onClick={onClick}>
@@ -16,7 +16,9 @@ const EventCard: React.FC<EventCardProps> = ({
                 <EventName>{eventName}</EventName>
                 <EventLink href={eventUrl}>Event Link</EventLink>
             </EventHeader>
-            <EventDate>{eventStartDate} - {eventEndDate}</EventDate>
+            <EventDate>
+                {eventStartDate} - {eventEndDate}
+            </EventDate>
             <EventDescription>{eventDescription}</EventDescription>
         </CardContainer>
     );
@@ -41,12 +43,12 @@ const EventHeader = styled.div`
 const EventName = styled.h2`
     font-size: 20px;
     font-weight: 700;
-    color: #FF8151;
+    color: #ff8151;
     margin: 0;
 `;
 
 const EventLink = styled.a`
-    color: #5EB7FF;
+    color: #5eb7ff;
     font-size: 14px;
     font-weight: 600;
     text-decoration: none;
@@ -54,7 +56,7 @@ const EventLink = styled.a`
 
 const EventDate = styled.p`
     font-size: 12px;
-    color: #A3AAB8;
+    color: #a3aab8;
     margin-bottom: 10px;
 `;
 
