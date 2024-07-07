@@ -9,6 +9,8 @@ resources:
 configMapGenerator:
   - behavior: merge
     literals:
+      - BACKEND_ISSUERCHAINID=11155111
+      - BACKEND_ENABLELOGINEMAIL=false
       - BACKEND_RESTPORT=3000
       - BACKEND_POSTGRESUSERNAME=postgres
       - BACKEND_JWTEXPIRESSEC=36000

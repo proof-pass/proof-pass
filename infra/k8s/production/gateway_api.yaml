@@ -65,7 +65,7 @@ spec:
             value: /swagger-ui
       backendRefs:
         - name: swagger-ui
-          namespace: app
+          namespace: swagger-ui
           kind: Service
           port: 8080
     - matches:

@@ -7,6 +7,7 @@ import (
 	"net/mail"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -30,33 +31,33 @@ const (
 )
 
 type APIService struct {
-	emailCredentialContextID  int64
-	ticketCredentialContextID int64
-	issuerChainID             int64
-	dbClient                  *repos.Client
-	redisClient               redis.UniversalClient
-	jwtService                *jwt.Service
-	issuerClient              issuer.IssuerServiceClient
+	emailCredentialContextID int64
+	issuerChainID            int64
+	dbClient                 *repos.Client
+	redisClient              redis.UniversalClient
+	sesClient                *ses.Client // null if email login is disabled
+	jwtService               *jwt.Service
+	issuerClient             issuer.IssuerServiceClient
 }
 
 // NewAPIService creates a default api service
 func NewAPIService(
 	emailCredentialContextID int64,
-	ticketCredentialContextID int64,
 	issuerChainID int64,
 	dbClient *repos.Client,
 	redisClient redis.UniversalClient,
+	sesClient *ses.Client,
 	jwtService *jwt.Service,
 	issuerClient issuer.IssuerServiceClient,
 ) *APIService {
 	return &APIService{
-		emailCredentialContextID:  emailCredentialContextID,
-		ticketCredentialContextID: ticketCredentialContextID,
-		issuerChainID:             issuerChainID,
-		dbClient:                  dbClient,
-		redisClient:               redisClient,
-		jwtService:                jwtService,
-		issuerClient:              issuerClient,
+		emailCredentialContextID: emailCredentialContextID,
+		issuerChainID:            issuerChainID,
+		dbClient:                 dbClient,
+		redisClient:              redisClient,
+		sesClient:                sesClient,
+		jwtService:               jwtService,
+		issuerClient:             issuerClient,
 	}
 }
 
@@ -177,13 +178,28 @@ func (s *APIService) EventsEventIdRequestTicketCredentialPost(ctx context.Contex
 		return openapi.Response(http.StatusBadRequest, errMsg), nil
 	}
 
+	// get event
+	event, err := s.dbClient.Events.GetEventByID(ctx, eventId)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			logger.Err(err).Msg("Event not found")
+			return openapi.Response(http.StatusNotFound, nil), nil
+		}
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+	if event.ContextID == "" {
+		errMsg := "Event context ID not set, cannot generate ticket credential"
+		logger.Info().Msg(errMsg)
+		return openapi.Response(http.StatusBadRequest, errMsg), nil
+	}
+
 	// found registration, create ticket credential
 	revocable := int64(0)
 	resp, err := s.issuerClient.GenerateSignedCredential(ctx, &issuer.GenerateSignedCredentialRequest{
 		Header: &issuer.Header{
 			Version: 1,
 			Type:    fmt.Sprintf("%d", unitCredentialTypeID),
-			Context: fmt.Sprintf("%d", s.ticketCredentialContextID),
+			Context: event.ContextID,
 			Id:      util.StringToUint248Hash(userEmail).String(),
 		},
 		Body: &issuer.Body{
@@ -342,16 +358,16 @@ func (s *APIService) UserRequestVerificationCodePost(ctx context.Context, userEm
 		return openapi.Response(http.StatusInternalServerError, nil), err
 	}
 
+	err = s.sendSigninCodeToEmail(ctx, email.Address, code)
+	if err != nil {
+		logger.Err(err).Msg("Failed to send email verification code")
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+
 	// cache code
 	err = s.redisClient.SetNX(ctx, key, code, emailSigninCodeCacheDurationSec*time.Second).Err()
 	if err != nil {
 		logger.Err(err).Msg("Failed to cache email sign in code")
-		return openapi.Response(http.StatusInternalServerError, nil), err
-	}
-
-	err = s.sendSigninCodeToEmail(ctx, email.Address, code)
-	if err != nil {
-		logger.Err(err).Msg("Failed to send email verification code")
 		return openapi.Response(http.StatusInternalServerError, nil), err
 	}
 

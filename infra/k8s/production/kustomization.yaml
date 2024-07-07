@@ -12,6 +12,8 @@ resources:
 configMapGenerator:
   - behavior: merge
     literals:
+      - BACKEND_ISSUERCHAINID=1
+      - BACKEND_ENABLELOGINEMAIL=true
       - BACKEND_RESTPORT=3000
       - BACKEND_POSTGRESUSERNAME=postgres
       - BACKEND_JWTEXPIRESSEC=36000
@@ -25,9 +27,6 @@ configMapGenerator:
   - behavior: merge
     literals:
       - ISSUER_ID=125344402375953606533377270523694284815265854046 # TODO: update me
-      - POSTGRES_DB=postgres
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
     name: issuer
     namespace: app
   - behavior: merge

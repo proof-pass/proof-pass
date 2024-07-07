@@ -14,7 +14,12 @@ ENV CGO_ENABLED=0
 
 RUN go build -o app .
 
+# CA Certificates stage
+FROM golang:1.21 AS certs
+RUN apt-get update && apt-get install -y ca-certificates
+
 FROM scratch AS runtime
 COPY --from=build /go/src/app ./
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 EXPOSE 8080/tcp
 ENTRYPOINT ["./app"]
