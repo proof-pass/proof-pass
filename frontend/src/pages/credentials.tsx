@@ -6,6 +6,7 @@ import withAuth from '@/components/withAuth';
 import { DefaultApi, Configuration, FetchAPI, TicketCredential } from '@/api';
 import { getToken } from '@/utils/auth';
 import { decryptValue } from '@/utils/utils';
+import JsonDisplay from '@/components/JsonDisplay'; 
 
 const CredentialsPage: React.FC = () => {
     const router = useRouter();
@@ -13,8 +14,7 @@ const CredentialsPage: React.FC = () => {
     const [eventNames, setEventNames] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [displayedCredentials, setDisplayedCredentials] = useState<Record<string, string>>({});
-
+    const [displayedCredentials, setDisplayedCredentials] = useState<Record<string, Record<string, unknown> | null>>({});
     const api = useMemo(() => {
         const token = getToken();
         const customFetch: FetchAPI = async (input: RequestInfo, init?: RequestInit) => {
@@ -72,20 +72,29 @@ const CredentialsPage: React.FC = () => {
                 }
                 const decryptedData = decryptValue(ticket.data, hashedPassword);
                 const parsedData = JSON.parse(decryptedData);
+                const finalData = JSON.parse(parsedData);
                 setDisplayedCredentials((prev) => ({
                     ...prev,
-                    [eventId]: JSON.stringify(parsedData, null, 2),
+                    [eventId]: finalData,
                 }));
             } catch (error) {
                 console.error('Error decrypting or parsing ticket data:', error);
                 setError('Failed to display ticket credential. Please try again.');
+                setDisplayedCredentials((prev) => ({
+                    ...prev,
+                    [eventId]: null,
+                }));
             }
         } else {
             setError('No ticket data available for this event.');
+            setDisplayedCredentials((prev) => ({
+                ...prev,
+                [eventId]: null,
+            }));
         }
     };
 
-    return (
+      return (
         <PageContainer>
             <Header>
                 <PlanetOverlay>
@@ -113,9 +122,9 @@ const CredentialsPage: React.FC = () => {
                                     <DisplayCredentialButton onClick={() => handleDisplayCredential(ticket)}>
                                         Display Credential
                                     </DisplayCredentialButton>
-                                    {displayedCredentials[ticket.eventId || 'unknown'] && (
+                                    {displayedCredentials[ticket.eventId || 'unknown'] !== undefined && (
                                         <CredentialDisplay>
-                                            <pre>{displayedCredentials[ticket.eventId || 'unknown']}</pre>
+                                            <JsonDisplay data={displayedCredentials[ticket.eventId || 'unknown']} />
                                         </CredentialDisplay>
                                     )}
                                 </CredentialItem>
