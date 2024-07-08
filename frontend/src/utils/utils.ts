@@ -8,7 +8,7 @@ function hashPassword(password: string): string {
 
 // Function to generate a random 32-byte value (for internal nullifier and identity secret)
 function generateRandomValue(): string {
-    return `0x${crypto.randomBytes(32).toString('hex')}`;
+    return '0x' + crypto.randomBytes(32).toString('hex');
 }
 
 // Function to generate identity commitment
@@ -16,7 +16,6 @@ function generateIdentityCommitment(identitySecret: string): string {
     return `0x${keccak256(identitySecret).toString('hex')}`;
 }
 
-// Function to encrypt a value with the hashed password
 function encryptValue(value: string, hashedPassword: string): string {
     const iv = crypto.randomBytes(12);
     const cipher = crypto.createCipheriv(
@@ -25,8 +24,15 @@ function encryptValue(value: string, hashedPassword: string): string {
         iv,
     );
 
+    let valueBuffer;
+    if (value.startsWith('0x')) {
+        valueBuffer = Buffer.from(value.slice(2), 'hex');
+    } else {
+        valueBuffer = Buffer.from(value, 'utf8');
+    }
+
     const encrypted = Buffer.concat([
-        cipher.update(Buffer.from(value.slice(2), 'hex')),
+        cipher.update(valueBuffer),
         cipher.final(),
     ]);
 
@@ -35,7 +41,6 @@ function encryptValue(value: string, hashedPassword: string): string {
     return `0x${Buffer.concat([iv, encrypted, authTag]).toString('hex')}`;
 }
 
-// Function to decrypt a value (for future use)
 function decryptValue(encryptedValue: string, hashedPassword: string): string {
     const encryptedBuffer = Buffer.from(encryptedValue.slice(2), 'hex');
     const iv = encryptedBuffer.slice(0, 12);
@@ -54,7 +59,11 @@ function decryptValue(encryptedValue: string, hashedPassword: string): string {
         decipher.final(),
     ]);
 
-    return `0x${decrypted.toString('hex')}`;
+    if (decrypted.length === 32 && decrypted.every(byte => byte >= 0 && byte <= 255)) {
+        return '0x' + decrypted.toString('hex');
+    } else {
+        return decrypted.toString('utf8');
+    }
 }
 
 // Main function to set up user credentials
