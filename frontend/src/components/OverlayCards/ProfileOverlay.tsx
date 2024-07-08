@@ -5,6 +5,7 @@ import { ProfileOverlayProps } from '@/types/profileOverlayProps';
 import { DefaultApi, Configuration, User } from '@/api';
 import { useRouter } from 'next/router';
 import { getToken, removeToken } from '@/utils/auth';
+import { decryptValue } from '@/utils/utils';
 
 const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
     onClose,
@@ -13,6 +14,8 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
     const [userDetails, setUserDetails] = useState<User | null>(null);
     const [showIdentitySecret, setShowIdentitySecret] = useState(false);
     const [showInternalNullifier, setShowInternalNullifier] = useState(false);
+    const [decryptedIdentitySecret, setDecryptedIdentitySecret] = useState('');
+    const [decryptedInternalNullifier, setDecryptedInternalNullifier] = useState('');
     const [message, setMessage] = useState('');
     const router = useRouter();
 
@@ -48,6 +51,32 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
         fetchUserDetails();
     }, [router, handleLogout]);
 
+    const handleToggleIdentitySecret = () => {
+        const hashedPassword = localStorage.getItem('auth_password');
+        if (hashedPassword && userDetails && userDetails.encryptedIdentitySecret) {
+            if (showIdentitySecret) {
+                setShowIdentitySecret(false);
+            } else {
+                const decryptedValue = decryptValue(userDetails.encryptedIdentitySecret, hashedPassword);
+                setDecryptedIdentitySecret(decryptedValue);
+                setShowIdentitySecret(true);
+            }
+        }
+    };
+
+    const handleToggleInternalNullifier = () => {
+        const hashedPassword = localStorage.getItem('auth_password');
+        if (hashedPassword && userDetails && userDetails.encryptedInternalNullifier) {
+            if (showInternalNullifier) {
+                setShowInternalNullifier(false);
+            } else {
+                const decryptedValue = decryptValue(userDetails.encryptedInternalNullifier, hashedPassword);
+                setDecryptedInternalNullifier(decryptedValue);
+                setShowInternalNullifier(true);
+            }
+        }
+    };
+
     return (
         <OverlayCard
             title="Profile"
@@ -72,13 +101,11 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
                         <SecretValue>
                             <SecretContent>
                                 {showIdentitySecret
-                                    ? userDetails.encryptedIdentitySecret
+                                    ? decryptedIdentitySecret
                                     : '******'}
                             </SecretContent>
                             <RevealButton
-                                onClick={() =>
-                                    setShowIdentitySecret(!showIdentitySecret)
-                                }
+                                onClick={handleToggleIdentitySecret}
                             >
                                 {showIdentitySecret ? 'Hide' : 'Show'}
                             </RevealButton>
@@ -89,15 +116,11 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
                         <SecretValue>
                             <SecretContent>
                                 {showInternalNullifier
-                                    ? userDetails.encryptedInternalNullifier
+                                    ? decryptedInternalNullifier
                                     : '******'}
                             </SecretContent>
                             <RevealButton
-                                onClick={() =>
-                                    setShowInternalNullifier(
-                                        !showInternalNullifier,
-                                    )
-                                }
+                                onClick={handleToggleInternalNullifier}
                             >
                                 {showInternalNullifier ? 'Hide' : 'Show'}
                             </RevealButton>
@@ -211,9 +234,7 @@ const DetailContent = styled.div`
 
 const Message = styled.p`
     color: #ff6b6b;
-    font:
-        500 14px/150% 'Inter',
-        sans-serif;
+    font: 500 14px/150% 'Inter', sans-serif;
     margin: 0;
 `;
 

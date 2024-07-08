@@ -54,7 +54,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             await api.userRequestVerificationCodePost({
                 userEmailVerificationRequest: { email: email },
             });
-            setMessage('Verification code sent to your email.');
+            setMessage('Verification code sent to your email. Please also make sure to check your spam or junk folder.');
             setStage('confirmation-code');
         } catch (error) {
             setMessage('Failed to send verification code.');

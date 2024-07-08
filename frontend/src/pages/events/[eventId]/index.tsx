@@ -22,7 +22,7 @@ import {
     issuer,
 } from '@galxe-identity-protocol/sdk';
 import { ethers } from 'ethers';
-import { decryptValue } from '@/utils/utils';
+import { decryptValue, encryptValue } from '@/utils/utils';
 import { setToken } from '@/utils/auth';
 
 const EventDetailPage: React.FC = () => {
@@ -43,6 +43,7 @@ const EventDetailPage: React.FC = () => {
         useState<TicketCredential | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [eventNotFound, setEventNotFound] = useState(false);
+    const [isRequestingCredential, setIsRequestingCredential] = useState(false);
 
     const handleError = (message: string) => {
         setErrorMessage(message);
@@ -76,44 +77,27 @@ const EventDetailPage: React.FC = () => {
                 if (jwt && proof) {
                     console.log('Quick login with proof:', proof);
                     setToken(jwt);
-
-                    let ticketCredential;
-
-                    try {
-                        ticketCredential =
-                            await api.eventsEventIdRequestTicketCredentialPost({
-                                eventId: eventId as string,
-                            });
-                    } catch (error) {
-                        console.log(
-                            'Failed to request new ticket credential, checking for existing one',
-                        );
-                        // If the request fails, check if the user already has a ticket credential
-                        const credentials =
-                            await api.userMeTicketCredentialsGet();
-                        ticketCredential = credentials.find(
-                            (cred) => cred.eventId === eventId,
-                        );
-                    }
-
-                    if (ticketCredential) {
-                        // If we have a ticket credential (either new or existing), proceed
-                        setHasTicket(true);
-                        setTicketCredential(ticketCredential);
-                        setQrCodeValue((prev) => ({
-                            ...prev,
-                            [eventId as string]: proof,
-                        }));
-                        setProofGenerated((prev) => ({
-                            ...prev,
-                            [eventId as string]: true,
-                        }));
-                    } else {
-                        throw new Error(
-                            'Failed to find or request ticket credential',
-                        );
-                    }
-
+    
+                    // Parse the proof from the URL
+                    const parsedProof = JSON.parse(proof);
+                    const proofString = JSON.stringify(parsedProof);
+    
+                    // Set the QR code value directly from the parsed proof
+                    setQrCodeValue((prev) => ({
+                        ...prev,
+                        [eventId as string]: proofString,
+                    }));
+    
+                    // Mark the proof as generated
+                    setProofGenerated((prev) => ({
+                        ...prev,
+                        [eventId as string]: true,
+                    }));
+    
+                    // Set hasTicket to true since we have a valid proof
+                    setHasTicket(true);
+    
+                    // Remove the jwt and proof from the URL
                     window.history.replaceState(
                         {},
                         document.title,
@@ -125,9 +109,9 @@ const EventDetailPage: React.FC = () => {
                 setErrorMessage('Failed to perform quick login');
             }
         },
-        [eventId, api],
+        [eventId],
     );
-
+    
     useEffect(() => {
         const fetchEventDetails = async () => {
             if (eventId) {
@@ -140,14 +124,13 @@ const EventDetailPage: React.FC = () => {
                     } else {
                         setEvent(eventDetails);
                     }
-
+    
+                    // Only perform quick login if both jwt and proof are present
                     if (jwt && proof) {
-                        // Handle quick login
                         await handleQuickLogin(jwt as string, proof as string);
                     } else {
-                        // Normal flow: check for existing ticket
-                        const credentials =
-                            await api.userMeTicketCredentialsGet();
+                        // Check for existing ticket credential only if not doing quick login
+                        const credentials = await api.userMeTicketCredentialsGet();
                         const eventTicket = credentials.find(
                             (cred) => cred.eventId === eventId,
                         );
@@ -165,58 +148,96 @@ const EventDetailPage: React.FC = () => {
                 }
             }
         };
-
+    
         fetchEventDetails();
     }, [eventId, jwt, proof, api, handleQuickLogin]);
 
     const handleRequestCredential = async () => {
+        setIsRequestingCredential(true);
         try {
-            const ticketCredential =
-                await api.eventsEventIdRequestTicketCredentialPost({
-                    eventId: eventId as string,
-                });
-
-            if (ticketCredential) {
+            // First, request the ticket credential
+            const unencryptedTicket = await api.eventsEventIdRequestTicketCredentialPost({
+                eventId: eventId as string,
+            });
+    
+            console.log('Unencrypted ticket credential received:', unencryptedTicket);
+    
+            if (unencryptedTicket && unencryptedTicket.credential) {
+                // Encrypt the ticket credential
+                const hashedPassword = localStorage.getItem('auth_password');
+                if (!hashedPassword) {
+                    throw new Error('Authentication password not found');
+                }
+    
+                const credentialString = JSON.stringify(unencryptedTicket.credential);
+                const encryptedData = encryptValue(credentialString, hashedPassword);
+    
+                // Store the encrypted ticket credential
                 await api.userMeTicketCredentialPut({
                     putTicketCredentialRequest: {
-                        eventId: ticketCredential.eventId ?? '',
-                        data: ticketCredential.credential ?? '',
-                        issuedAt: ticketCredential.issuedAt ?? new Date(),
-                        expireAt: ticketCredential.expireAt ?? new Date(),
+                        eventId: unencryptedTicket.eventId || '',
+                        data: encryptedData,
+                        issuedAt: unencryptedTicket.issuedAt || new Date(),
+                        expireAt: unencryptedTicket.expireAt || new Date(),
                     },
                 });
-                setHasTicket(true);
-                setTicketCredential(ticketCredential);
+    
+                console.log('Encrypted ticket credential stored successfully');
+    
+                // Fetch the stored encrypted ticket credential
+                const allTicketCredentials = await api.userMeTicketCredentialsGet();
+                const encryptedTicket = allTicketCredentials.find(ticket => ticket.eventId === eventId);
+    
+                if (encryptedTicket && encryptedTicket.data) {
+                    setHasTicket(true);
+                    setTicketCredential(encryptedTicket);
+                    console.log('Encrypted ticket credential retrieved:', encryptedTicket);
+                } else {
+                    throw new Error('Failed to retrieve stored encrypted ticket data');
+                }
             } else {
-                throw new Error('Failed to request ticket credential');
+                throw new Error('Failed to receive unencrypted ticket credential');
             }
         } catch (error) {
-            console.error('Error requesting credential:', error);
-            handleError("You haven't registered for this event");
+            console.error('Error in ticket credential process:', error);
+            handleError(error instanceof Error ? error.message : "Failed in ticket credential process");
+        } finally {
+            setIsRequestingCredential(false);
         }
     };
 
     const handleGenerateProof = async () => {
+        if (qrCodeValue[eventId as string]) {
+            // If we already have a QR code value (from quick login), just set it as generated
+            setProofGenerated((prev) => ({
+                ...prev,
+                [eventId as string]: true,
+            }));
+            return;
+        }
+    
         if (!ticketCredential) {
+            console.error('No ticket credential available');
             setErrorMessage('No ticket credential available');
             return;
         }
-        const eventId = ticketCredential.eventId || 'unknown';
-        setIsGeneratingProof((prev) => ({ ...prev, [eventId]: true }));
+    
+        setIsGeneratingProof((prev) => ({ ...prev, [eventId as string]: true }));
         setErrorMessage(null);
         try {
             console.log('Generate proof for:', ticketCredential);
             if (!ticketCredential.data) {
+                console.error('Ticket data is missing');
                 throw new Error('Ticket data is missing');
             }
             const proofData = await generateProof(ticketCredential, api);
             setQrCodeValue((prev) => ({
                 ...prev,
-                [eventId]: proofData,
+                [eventId as string]: proofData,
             }));
             setProofGenerated((prev) => ({
                 ...prev,
-                [eventId]: true,
+                [eventId as string]: true,
             }));
         } catch (error) {
             console.error('Error generating proof:', error);
@@ -224,7 +245,7 @@ const EventDetailPage: React.FC = () => {
                 `Failed to generate proof: ${error instanceof Error ? error.message : String(error)}`,
             );
         } finally {
-            setIsGeneratingProof((prev) => ({ ...prev, [eventId]: false }));
+            setIsGeneratingProof((prev) => ({ ...prev, [eventId as string]: false }));
         }
     };
 
@@ -234,14 +255,14 @@ const EventDetailPage: React.FC = () => {
     ): Promise<string> => {
         try {
             await prepare();
-
+    
             const provider = new ethers.JsonRpcProvider(
-                'https://cloudflare-eth.com',
+                'https://cloudflare-eth.com'
             );
-
+    
             const u = new user.User();
             const userDetails = await api.userMeGet();
-
+    
             if (
                 !userDetails.encryptedIdentitySecret ||
                 !userDetails.encryptedInternalNullifier
@@ -253,7 +274,7 @@ const EventDetailPage: React.FC = () => {
             if (!hashedPassword) {
                 throw new Error('Authentication password not found');
             }
-
+    
             const decryptedIdentitySecret = decryptValue(
                 userDetails.encryptedIdentitySecret,
                 hashedPassword,
@@ -262,39 +283,81 @@ const EventDetailPage: React.FC = () => {
                 userDetails.encryptedInternalNullifier,
                 hashedPassword,
             );
+    
+            console.log('Decrypted Identity Secret:', decryptedIdentitySecret);
+            console.log('Decrypted Internal Nullifier:', decryptedInternalNullifier);
 
+            let identitySecretBigInt: bigint | undefined;
+            let internalNullifierBigInt: bigint | undefined;
+
+            try {
+                identitySecretBigInt = BigInt(decryptedIdentitySecret);
+                internalNullifierBigInt = BigInt(decryptedInternalNullifier);
+
+
+                    console.log('Identity Secret as BigInt:', identitySecretBigInt.toString());
+                    console.log('Internal Nullifier as BigInt:', internalNullifierBigInt.toString());
+            } catch (error) {
+                console.error('Error converting decrypted values to BigInt:', error);
+                throw new Error('Decrypted values are not valid numbers');
+            }
+    
             const identitySlice: user.IdentitySlice = {
-                identitySecret: BigInt(decryptedIdentitySecret),
-                internalNullifier: BigInt(decryptedInternalNullifier),
+                identitySecret: identitySecretBigInt,
+                internalNullifier: internalNullifierBigInt,
                 domain: 'evm',
             };
-
+    
             u.addIdentitySlice(identitySlice);
             console.log(
-                'User set up successfully with decrypted identity slice.',
+                'User set up successfully with decrypted identity slice.'
             );
-
+    
             const identityCommitment = u.getIdentityCommitment('evm');
             if (!identityCommitment) {
                 throw new Error('Failed to get identity commitment');
             }
             console.log('Identity commitment:', identityCommitment.toString());
-
+    
             if (!ticket.data) {
                 throw new Error('Ticket data is missing');
             }
-            const ticketData = JSON.parse(ticket.data);
-            console.log('Ticket data parsed:', ticketData);
-
+    
+            console.log('Raw ticket data before decryption:', ticket.data);
+    
+            // Decrypt the ticket data
+            const decryptedTicketData = decryptValue(ticket.data, hashedPassword);
+            console.log('Decrypted ticket data:', decryptedTicketData);
+    
+            let ticketData;
+            try {
+                // Parse the decrypted ticket data, which is a string representation of JSON
+                ticketData = JSON.parse(decryptedTicketData);
+                
+                // Parse the inner JSON string
+                ticketData = JSON.parse(ticketData);
+            } catch (error) {
+                console.error('Error parsing decrypted ticket data:', error);
+                throw new Error('Invalid ticket data format');
+            }
+    
             const unitTypeSpec = credType.primitiveTypes.unit;
             const unitType = errors.unwrap(
                 credType.createTypeFromSpec(unitTypeSpec),
             );
             console.log('Credential type created successfully.');
-
+    
             const contextString = `Event Ticket: ${ticket.eventId || 'unknown'}`;
             const contextID = credential.computeContextID(contextString);
 
+            console.log('Preparing to generate proof with the following data:');
+            console.log('Parsed ticket data:', JSON.stringify(ticketData, null, 2));
+            // Check if ticketData has the expected structure
+            if (!ticketData || !ticketData.header || !ticketData.header.id) {
+                console.error('Ticket data is missing expected properties');
+                throw new Error('Invalid ticket data structure');
+            }
+            
             const cred = errors.unwrap(
                 credential.Credential.create(
                     {
@@ -306,39 +369,39 @@ const EventDetailPage: React.FC = () => {
                 ),
             );
             console.log('Credential object created successfully:', cred);
-
+    
             cred.attachments['chain_id'] = event?.chainId || '0';
             cred.attachments['context_id'] = event?.contextId || 'unknown';
             cred.attachments['issuer_key_id'] = event?.issuerKeyId || 'unknown';
-
+    
             const dummyIssuerEvmAddr =
                 '0x15f4a32c40152a0f48E61B7aed455702D1Ea725e';
             const dummyKey = utils.decodeFromHex(
-                '0xfd60ceb442aca7f74d2e56c1f0e93507798e8a6e02c4cd1a5585a36167fa7b03',
+                '0xfd60ceb442aca7f74d2e56c1f0e93507798e8a6e02c4cd1a5585a36167fa7b03'
             );
             const myIssuer = new issuer.BabyzkIssuer(
                 dummyKey,
                 BigInt(dummyIssuerEvmAddr),
-                BigInt(1),
+                BigInt(1)
             ); // mainnet
             myIssuer.sign(cred, {
                 sigID: BigInt(100),
                 expiredAt: BigInt(
-                    Math.ceil(new Date().getTime() / 1000) + 7 * 24 * 60 * 60,
+                    Math.ceil(new Date().getTime() / 1000) + 7 * 24 * 60 * 60
                 ),
                 identityCommitment: identityCommitment,
             });
             console.log('Signature added to the credential');
-
+    
             const externalNullifier =
                 utils.computeExternalNullifier(contextString);
             const expiredAtLowerBound = BigInt(
-                Math.ceil(new Date().getTime() / 1000) + 3 * 24 * 60 * 60,
+                Math.ceil(new Date().getTime() / 1000) + 3 * 24 * 60 * 60
             );
             const equalCheckId = BigInt(0);
             const pseudonym = BigInt('0xdeadbeef');
             console.log('Proof generation parameters set up successfully.');
-
+    
             console.log('Downloading proof generation gadgets...');
             const proofGenGadgets =
                 await user.User.fetchProofGenGadgetsByTypeID(
@@ -346,7 +409,7 @@ const EventDetailPage: React.FC = () => {
                     provider,
                 );
             console.log('Proof generation gadgets downloaded successfully.');
-
+    
             const proof = await u.genBabyzkProofWithQuery(
                 identityCommitment,
                 cred,
@@ -364,17 +427,17 @@ const EventDetailPage: React.FC = () => {
                 `,
             );
             console.log('Proof generated successfully.');
-
+    
             console.log('Generating proof with the following parameters:');
             console.log('Type ID:', cred.header.type.toString());
             console.log('Context ID:', contextID.toString());
             console.log('Context String:', contextString);
             console.log('Issuer ID:', BigInt(dummyIssuerEvmAddr).toString());
-
+    
             console.log('Proof:', proof);
             const proofString = JSON.stringify(proof);
             console.log('Proof converted to string successfully:', proofString);
-
+    
             return proofString;
         } catch (error) {
             console.error('Error generating proof:', error);
@@ -384,7 +447,7 @@ const EventDetailPage: React.FC = () => {
             }
             throw error;
         }
-    };
+    };    
 
     const handleHostCheckIn = () => {
         router.push(`/events/${eventId}/checkin`);
@@ -444,66 +507,56 @@ const EventDetailPage: React.FC = () => {
                             {isDescriptionExpanded ? 'Show less' : 'Show more'}
                         </ExpandButton>
                         {!hasTicket ? (
-                            <>
-                                <RequestCredentialButton
-                                    onClick={handleRequestCredential}
-                                >
-                                    Request Credential
-                                </RequestCredentialButton>
-                            </>
-                        ) : (
-                            <>
-                                <CredentialObtainedMessage>
-                                    Ticket Credential Obtained 🎉
-                                </CredentialObtainedMessage>
-                                {!proofGenerated[
-                                    ticketCredential?.eventId || 'unknown'
-                                ] ? (
-                                    <GenerateProofButton
-                                        onClick={handleGenerateProof}
-                                        disabled={
-                                            isGeneratingProof[
-                                                ticketCredential?.eventId ||
-                                                    'unknown'
-                                            ]
-                                        }
-                                    >
-                                        {isGeneratingProof[
-                                            ticketCredential?.eventId ||
-                                                'unknown'
-                                        ] ? (
-                                            <LoadingContent>
-                                                <LoadingSpinner />
-                                                <span>Generating...</span>
-                                            </LoadingContent>
-                                        ) : (
-                                            'Generate Proof'
-                                        )}
-                                    </GenerateProofButton>
-                                ) : (
-                                    <>
-                                        <ProofMessage>
-                                            Proof generated, show QR code below
-                                            at gate to check in. Screenshot the QR before the event as
-                                            internet could be spotty!
-                                        </ProofMessage>
-                                        {qrCodeValue && ticketCredential && (
-                                            <QRCodeContainer>
-                                                <QRCode
-                                                    value={
-                                                        qrCodeValue[
-                                                            ticketCredential.eventId ||
-                                                                'unknown'
-                                                        ] || ''
-                                                    }
-                                                    size={256}
-                                                />
-                                            </QRCodeContainer>
-                                        )}
-                                    </>
-                                )}
-                            </>
-                        )}
+    <RequestCredentialButton 
+        onClick={handleRequestCredential}
+        disabled={isRequestingCredential}
+    >
+        {isRequestingCredential ? (
+            <LoadingContent>
+                <LoadingSpinner />
+                <span>Requesting...</span>
+            </LoadingContent>
+        ) : (
+            'Request Credential'
+        )}
+    </RequestCredentialButton>
+) : (
+    <>
+        <CredentialObtainedMessage>
+            Ticket Credential Obtained 🎉
+        </CredentialObtainedMessage>
+        {!proofGenerated[eventId as string] ? (
+            <GenerateProofButton
+                onClick={handleGenerateProof}
+                disabled={isGeneratingProof[eventId as string]}
+            >
+                {isGeneratingProof[eventId as string] ? (
+                    <LoadingContent>
+                        <LoadingSpinner />
+                        <span>Generating...</span>
+                    </LoadingContent>
+                ) : (
+                    'Generate Proof'
+                )}
+            </GenerateProofButton>
+        ) : (
+            <>
+                <ProofMessage>
+                    Proof generated, show QR code below at gate to check in. 
+                    Screenshot the QR before the event as internet could be spotty!
+                </ProofMessage>
+                {qrCodeValue && (
+                    <QRCodeContainer>
+                        <QRCode
+                            value={qrCodeValue[eventId as string] || ''}
+                            size={256}
+                        />
+                    </QRCodeContainer>
+                )}
+            </>
+        )}
+    </>
+)}
                     </>
                 )}
             </EventDetailsContainer>
@@ -661,12 +714,14 @@ const RequestCredentialButton = styled.button`
     border: none;
     border-radius: 8px;
     color: white;
-    cursor: pointer;
+    cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
     font-size: 16px;
     font-weight: 700;
     padding: 15px 32px;
     width: 100%;
     margin-top: 32px;
+    opacity: ${props => props.disabled ? 0.5 : 1};
+    transition: opacity 0.3s ease;
 `;
 
 const Separator = styled.hr`
