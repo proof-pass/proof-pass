@@ -6,6 +6,7 @@ import { DefaultApi, Configuration, User } from '@/api';
 import { useRouter } from 'next/router';
 import { getToken, removeToken } from '@/utils/auth';
 import { decryptValue } from '@/utils/utils';
+import { bech32 } from 'bech32';
 
 const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
     onClose,
@@ -18,6 +19,11 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
     const [decryptedInternalNullifier, setDecryptedInternalNullifier] = useState('');
     const [message, setMessage] = useState('');
     const router = useRouter();
+
+    const bufferToBech32 = (buffer: ArrayBuffer, prefix: string = 'secret'): string => {
+        const words = bech32.toWords(Buffer.from(buffer));
+        return bech32.encode(prefix, words);
+    };
 
     const handleLogout = useCallback(() => {
         removeToken();
@@ -51,31 +57,37 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
         fetchUserDetails();
     }, [router, handleLogout]);
 
-    const handleToggleIdentitySecret = () => {
+      const handleToggleIdentitySecret = () => {
         const hashedPassword = localStorage.getItem('auth_password');
         if (hashedPassword && userDetails && userDetails.encryptedIdentitySecret) {
             if (showIdentitySecret) {
                 setShowIdentitySecret(false);
             } else {
-                const decryptedValue = decryptValue(userDetails.encryptedIdentitySecret, hashedPassword);
-                setDecryptedIdentitySecret(decryptedValue);
+                const decryptedHex = decryptValue(userDetails.encryptedIdentitySecret, hashedPassword);
+                const bech32Value = bufferToBech32(Buffer.from(decryptedHex.slice(2), 'hex'));
+                setDecryptedIdentitySecret(bech32Value);
                 setShowIdentitySecret(true);
             }
         }
     };
-
+    
     const handleToggleInternalNullifier = () => {
         const hashedPassword = localStorage.getItem('auth_password');
         if (hashedPassword && userDetails && userDetails.encryptedInternalNullifier) {
             if (showInternalNullifier) {
                 setShowInternalNullifier(false);
             } else {
-                const decryptedValue = decryptValue(userDetails.encryptedInternalNullifier, hashedPassword);
-                setDecryptedInternalNullifier(decryptedValue);
+                const decryptedHex = decryptValue(userDetails.encryptedInternalNullifier, hashedPassword);
+                const bech32Value = bufferToBech32(Buffer.from(decryptedHex.slice(2), 'hex'));
+                setDecryptedInternalNullifier(bech32Value);
                 setShowInternalNullifier(true);
             }
         }
     };
+
+    const handleIdentityCommitmentConvert = (identityCommitment: string) => {
+        return bufferToBech32(Buffer.from(identityCommitment.slice(2), 'hex'), 'ic');
+    }
 
     return (
         <OverlayCard
@@ -93,7 +105,7 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
                     <DetailItem>
                         <Label>Identity Commitment:</Label>
                         <DetailContent>
-                            {userDetails.identityCommitment}
+                            {handleIdentityCommitmentConvert(userDetails.identityCommitment ?? '')}
                         </DetailContent>
                     </DetailItem>
                     <DetailItem>
