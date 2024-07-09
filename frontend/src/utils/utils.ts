@@ -1,3 +1,4 @@
+import { babyzk, user } from '@galxe-identity-protocol/sdk';
 import * as crypto from 'crypto';
 import keccak256 from 'keccak256';
 
@@ -9,11 +10,6 @@ function hashPassword(password: string): string {
 // Function to generate a random 32-byte value (for internal nullifier and identity secret)
 function generateRandomValue(): string {
     return '0x' + crypto.randomBytes(32).toString('hex');
-}
-
-// Function to generate identity commitment
-function generateIdentityCommitment(identitySecret: string): string {
-    return `0x${keccak256(identitySecret).toString('hex')}`;
 }
 
 function encryptValue(value: string, hashedPassword: string): string {
@@ -30,6 +26,27 @@ function encryptValue(value: string, hashedPassword: string): string {
     } else {
         valueBuffer = Buffer.from(value, 'utf8');
     }
+
+    const encrypted = Buffer.concat([
+        cipher.update(valueBuffer),
+        cipher.final(),
+    ]);
+
+    const authTag = cipher.getAuthTag();
+
+    return `0x${Buffer.concat([iv, encrypted, authTag]).toString('hex')}`;
+}
+
+function encryptBigInt(value: bigint, hashedPassword: string): string {
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv(
+        'aes-256-gcm',
+        Buffer.from(hashedPassword.slice(2), 'hex'),
+        iv,
+    );
+
+    // Convert the value to a buffer
+    const valueBuffer = Buffer.from(value.toString(16), 'hex');
 
     const encrypted = Buffer.concat([
         cipher.update(valueBuffer),
@@ -70,18 +87,21 @@ function decryptValue(encryptedValue: string, hashedPassword: string): string {
 }
 
 // Main function to set up user credentials
-function setupUserCredentials(password: string) {
+async function setupUserCredentials(password: string) {
+    await babyzk.prepare();
     const hashedPassword = hashPassword(password);
-    const internalNullifier = generateRandomValue();
-    const identitySecret = generateRandomValue();
-    const identityCommitment = generateIdentityCommitment(identitySecret);
 
-    const encryptedInternalNullifier = encryptValue(
-        internalNullifier,
+    const u = new user.User();
+    const identitySlice = u.createNewIdentitySlice('email');
+    const identityCommitment =
+        user.User.computeIdentityCommitment(identitySlice);
+
+    const encryptedInternalNullifier = encryptBigInt(
+        identitySlice.internalNullifier,
         hashedPassword,
     );
-    const encryptedIdentitySecret = encryptValue(
-        identitySecret,
+    const encryptedIdentitySecret = encryptBigInt(
+        identitySlice.identitySecret,
         hashedPassword,
     );
 
@@ -92,7 +112,6 @@ function setupUserCredentials(password: string) {
         encryptedInternalNullifier,
         encryptedIdentitySecret,
         identityCommitment,
-        internalNullifier,
     };
 }
 
@@ -105,7 +124,6 @@ export {
     setupUserCredentials,
     hashPassword,
     generateRandomValue,
-    generateIdentityCommitment,
     encryptValue,
     decryptValue,
     setAuthPassword,

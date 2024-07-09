@@ -48,11 +48,11 @@ const PasswordSetup: React.FC = () => {
                     encryptedInternalNullifier,
                     encryptedIdentitySecret,
                     identityCommitment,
-                } = setupUserCredentials(password);
+                } = await setupUserCredentials(password);
 
                 await authenticatedApi.userUpdatePut({
                     userUpdate: {
-                        identityCommitment: identityCommitment,
+                        identityCommitment: identityCommitment.toString(),
                         encryptedIdentitySecret: encryptedIdentitySecret,
                         encryptedInternalNullifier: encryptedInternalNullifier,
                     },

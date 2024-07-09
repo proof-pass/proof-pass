@@ -21,7 +21,6 @@ import {
     utils,
     issuer,
 } from '@galxe-identity-protocol/sdk';
-import { ethers } from 'ethers';
 import { decryptValue, encryptValue } from '@/utils/utils';
 import { setToken } from '@/utils/auth';
 
@@ -191,10 +190,10 @@ const EventDetailPage: React.FC = () => {
                 // Store the encrypted ticket credential
                 await api.userMeTicketCredentialPut({
                     putTicketCredentialRequest: {
-                        eventId: unencryptedTicket.eventId || '',
+                        eventId: unencryptedTicket.eventId!,
                         data: encryptedData,
-                        issuedAt: unencryptedTicket.issuedAt || new Date(),
-                        expireAt: unencryptedTicket.expireAt || new Date(),
+                        issuedAt: unencryptedTicket.issuedAt!,
+                        expireAt: unencryptedTicket.expireAt!,
                     },
                 });
 
@@ -291,10 +290,6 @@ const EventDetailPage: React.FC = () => {
     ): Promise<string> => {
         try {
             await prepare();
-
-            const provider = new ethers.JsonRpcProvider(
-                'https://cloudflare-eth.com',
-            );
 
             const u = new user.User();
             const userDetails = await api.userMeGet();
@@ -397,7 +392,7 @@ const EventDetailPage: React.FC = () => {
             );
             console.log('Credential type created successfully.');
 
-            const contextString = `Event Ticket: ${ticket.eventId || 'unknown'}`;
+            const contextString = event!.contextId!;
             const contextID = credential.computeContextID(contextString);
 
             console.log('Preparing to generate proof with the following data:');
@@ -411,56 +406,35 @@ const EventDetailPage: React.FC = () => {
                 throw new Error('Invalid ticket data structure');
             }
 
+            console.log(JSON.stringify(ticketData, null, 2));
+
             const cred = errors.unwrap(
-                credential.Credential.create(
-                    {
-                        type: unitType,
-                        contextID: contextID,
-                        userID: BigInt(ticketData.header.id),
-                    },
-                    {}, // Empty object for unit type
+                credential.Credential.unmarshal(
+                    unitType,
+                    JSON.stringify(ticketData, null, 2),
                 ),
             );
-            console.log('Credential object created successfully:', cred);
-
-            cred.attachments['chain_id'] = event?.chainId || '0';
-            cred.attachments['context_id'] = event?.contextId || 'unknown';
-            cred.attachments['issuer_key_id'] = event?.issuerKeyId || 'unknown';
-
-            const dummyIssuerEvmAddr =
-                '0x15f4a32c40152a0f48E61B7aed455702D1Ea725e';
-            const dummyKey = utils.decodeFromHex(
-                '0xfd60ceb442aca7f74d2e56c1f0e93507798e8a6e02c4cd1a5585a36167fa7b03',
-            );
-            const myIssuer = new issuer.BabyzkIssuer(
-                dummyKey,
-                BigInt(dummyIssuerEvmAddr),
-                BigInt(1),
-            ); // mainnet
-            myIssuer.sign(cred, {
-                sigID: BigInt(100),
-                expiredAt: BigInt(
-                    Math.ceil(new Date().getTime() / 1000) + 7 * 24 * 60 * 60,
-                ),
-                identityCommitment: identityCommitment,
-            });
-            console.log('Signature added to the credential');
 
             const externalNullifier =
                 utils.computeExternalNullifier(contextString);
             const expiredAtLowerBound = BigInt(
-                Math.ceil(new Date().getTime() / 1000) + 3 * 24 * 60 * 60,
+                Math.ceil(new Date().getTime() / 1000),
             );
+
             const equalCheckId = BigInt(0);
-            const pseudonym = BigInt('0xdeadbeef');
+            const pseudonym = BigInt(0);
             console.log('Proof generation parameters set up successfully.');
 
             console.log('Downloading proof generation gadgets...');
-            const proofGenGadgets =
-                await user.User.fetchProofGenGadgetsByTypeID(
-                    cred.header.type,
-                    provider,
-                );
+            // const proofGenGadgets =
+            //     await user.User.fetchProofGenGadgetsByTypeID(
+            //         cred.header.type,
+            //         provider,
+            //     );
+            const proofGenGadgets = await user.User.fetchProofGenGadgetByURIs(
+                'https://storage.googleapis.com/protocol-gadgets/unit/circom.wasm',
+                'https://storage.googleapis.com/protocol-gadgets/unit/circuit_final.zkey',
+            );
             console.log('Proof generation gadgets downloaded successfully.');
 
             const proof = await u.genBabyzkProofWithQuery(
@@ -485,7 +459,7 @@ const EventDetailPage: React.FC = () => {
             console.log('Type ID:', cred.header.type.toString());
             console.log('Context ID:', contextID.toString());
             console.log('Context String:', contextString);
-            console.log('Issuer ID:', BigInt(dummyIssuerEvmAddr).toString());
+            // console.log('Issuer ID:', BigInt(dummyIssuerEvmAddr).toString());
 
             console.log('Proof:', proof);
             const proofString = JSON.stringify(proof);

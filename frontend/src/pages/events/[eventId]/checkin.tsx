@@ -12,13 +12,8 @@ import {
     babyzk,
 } from '@galxe-identity-protocol/sdk';
 import { ethers } from 'ethers';
-import { DefaultApi, Configuration } from '@/api';
+import { DefaultApi, Configuration, Event } from '@/api';
 import { getToken } from '@/utils/auth';
-
-interface EventDetails {
-    id: string;
-    name: string;
-}
 
 interface ScannerError extends Error {
     status?: number;
@@ -33,7 +28,7 @@ const CheckInPage: React.FC = () => {
     const [adminCode, setAdminCode] = useState('');
     const [isHostLoggedIn, setIsHostLoggedIn] = useState(false);
     const [eventName, setEventName] = useState<string>('');
-    const [event, setEvent] = useState<EventDetails | null>(null);
+    const [event, setEvent] = useState<Event | null>(null);
     const [showLoginMessage, setShowLoginMessage] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [isQuickCheckIn, setIsQuickCheckIn] = useState(false);
@@ -64,7 +59,7 @@ const CheckInPage: React.FC = () => {
     );
 
     const onScanFailure = (error: string) => {
-        console.warn(`Code scan error = ${error}`);
+        // console.warn(`Code scan error = ${error}`);
     };
 
     const handleHostLogin = async (
@@ -91,13 +86,9 @@ const CheckInPage: React.FC = () => {
                 });
 
                 const expectedTypeID = credType.primitiveTypes.unit.type_id;
-                const expectedEventId = eventId as string;
-                const expectedContextID = credential.computeContextID(
-                    `Event Ticket: ${expectedEventId}`,
-                );
-                const expectedIssuerID = BigInt(
-                    '0x15f4a32c40152a0f48E61B7aed455702D1Ea725e',
-                );
+                console.log(event);
+                const expectedContextID = BigInt(event!.contextId!);
+                const expectedIssuerID = BigInt(event!.issuerKeyId!);
 
                 const actualContextID = babyzk.defaultPublicSignalGetter(
                     credential.IntrinsicPublicSignal.Context,
@@ -132,7 +123,9 @@ const CheckInPage: React.FC = () => {
                     evm.verifyResultToString(result),
                 );
 
-                return result === evm.VerifyResult.OK ? true : 'Verification failed';
+                return result === evm.VerifyResult.OK
+                    ? true
+                    : 'Verification failed';
             } catch (error) {
                 console.error('Error in verifyProof:', error);
                 return 'Failed to verify the proof. Please try again.';
@@ -202,7 +195,10 @@ const CheckInPage: React.FC = () => {
                         case 409:
                             return 'Attendance was previously recorded for this event.';
                         default:
-                            return scannerError.body?.message || 'Failed to record attendance. Please try again.';
+                            return (
+                                scannerError.body?.message ||
+                                'Failed to record attendance. Please try again.'
+                            );
                     }
                 } else {
                     return 'An unexpected error occurred. Please try again.';
@@ -215,22 +211,17 @@ const CheckInPage: React.FC = () => {
     const onScanSuccess = useCallback(
         async (decodedText: string) => {
             if (!event) return;
-    
+
             try {
                 await prepare();
                 const proof: babyzkTypes.WholeProof = JSON.parse(decodedText);
                 const verificationResult = await verifyProof(proof);
-    
-                if (verificationResult === true) {
+
+                if (verificationResult) {
                     if (isHostLoggedIn) {
-                        const attendanceResult = await recordAttendance(event.id, proof, adminCode);
-                        if (attendanceResult === true) {
-                            setPopupMessage('Verified, attendance recorded!');
-                            setPopupSuccess(true);
-                        } else {
-                            setPopupMessage(attendanceResult);
-                            setPopupSuccess(false);
-                        }
+                        await recordAttendance(event.id!, proof, adminCode);
+                        setPopupMessage('Verified, attendance recorded!');
+                        setPopupSuccess(true);
                     } else {
                         setPopupMessage('Verified!');
                         setPopupSuccess(true);
@@ -242,12 +233,27 @@ const CheckInPage: React.FC = () => {
                 setShowPopup(true);
             } catch (error: unknown) {
                 console.error('Error verifying proof:', error);
-                setPopupMessage('An unexpected error occurred. Please try again.');
+
+                if (error instanceof Error) {
+                    if (error.message.includes('Context ID mismatch')) {
+                        setPopupMessage(
+                            'This ticket is for a different event. Please check and try again.',
+                        );
+                    } else {
+                        setPopupMessage(
+                            'Failed to verify the QR code. Please try again.',
+                        );
+                    }
+                } else {
+                    setPopupMessage(
+                        'An unexpected error occurred. Please try again.',
+                    );
+                }
                 setPopupSuccess(false);
                 setShowPopup(true);
             }
         },
-        [event, isHostLoggedIn, adminCode, verifyProof, recordAttendance]
+        [event, isHostLoggedIn, adminCode, verifyProof, recordAttendance],
     );
 
     const handleGoBack = async () => {
@@ -266,34 +272,35 @@ const CheckInPage: React.FC = () => {
         }
     };
 
-    const fetchEventDetails = useCallback(async () => {
-        const { eventId, 'admin-code': urlAdminCode } = router.query;
+    useEffect(() => {
+        const fetchEventDetails = async () => {
+            const { eventId, 'admin-code': urlAdminCode } = router.query;
 
-        if (eventId && !isFetching && !eventDetailsFetched) {
-            setIsFetching(true);
-            try {
-                const eventDetails = await unauthenticatedApi.eventsEventIdGet({
-                    eventId: eventId as string,
-                });
-                setEvent(eventDetails as EventDetails);
-                setEventName(eventDetails.name || 'Unknown Event');
-                setEventDetailsFetched(true);
+            if (eventId && !isFetching && !eventDetailsFetched) {
+                setIsFetching(true);
+                try {
+                    const event = await unauthenticatedApi.eventsEventIdGet({
+                        eventId: eventId as string,
+                    });
+                    setEvent(event);
+                    console.log('setEvent: ', event);
+                    setEventName(event.name!);
+                    setEventDetailsFetched(true);
 
-                if (urlAdminCode) {
-                    setIsQuickCheckIn(true);
-                    setAdminCode(urlAdminCode as string);
-                    await autoLogin(urlAdminCode as string);
+                    if (urlAdminCode) {
+                        setIsQuickCheckIn(true);
+                        setAdminCode(urlAdminCode as string);
+                        await autoLogin(urlAdminCode as string);
+                    }
+                } catch (error) {
+                    console.error('Error fetching event details:', error);
+                    setEventName('Unknown Event');
+                } finally {
+                    setIsFetching(false);
                 }
-            } catch (error) {
-                console.error('Error fetching event details:', error);
-                setPopupMessage('Failed to fetch event details');
-                setPopupSuccess(false);
-                setShowPopup(true);
-                setEventName('Unknown Event');
-            } finally {
-                setIsFetching(false);
             }
-        }
+        };
+        fetchEventDetails();
     }, [
         router.query,
         unauthenticatedApi,
@@ -301,10 +308,6 @@ const CheckInPage: React.FC = () => {
         eventDetailsFetched,
         isFetching,
     ]);
-
-    useEffect(() => {
-        fetchEventDetails();
-    }, [fetchEventDetails]);
 
     useEffect(() => {
         if (typeof window !== 'undefined' && !scanner && eventDetailsFetched) {
@@ -394,12 +397,16 @@ const CheckInPage: React.FC = () => {
                 />
             </SVGIconSpace>
             {showPopup && (
-            <Popup>
-                <PopupText style={{ color: popupSuccess ? '#4ecdc4' : '#ff6b6b' }}>
-                    {popupMessage}
-                </PopupText>
-                <PopupButton onClick={() => setShowPopup(false)}>Close</PopupButton>
-            </Popup>
+                <Popup>
+                    <PopupText
+                        style={{ color: popupSuccess ? '#4ecdc4' : '#ff6b6b' }}
+                    >
+                        {popupMessage}
+                    </PopupText>
+                    <PopupButton onClick={() => setShowPopup(false)}>
+                        Close
+                    </PopupButton>
+                </Popup>
             )}
         </MainContainer>
     );
@@ -506,38 +513,42 @@ const LoginMessage = styled.div`
     }
 `;
 const Popup = styled.div`
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  text-align: center;
-  animation: fadeIn 0.3s ease-out;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    text-align: center;
+    animation: fadeIn 0.3s ease-out;
 
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
 `;
 
 const PopupText = styled.p`
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 15px;
 `;
 
 const PopupButton = styled.button`
-  background-color: #FF8151;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: bold;
+    background-color: #ff8151;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
 `;
 const PlanetOverlay = styled.div`
     position: absolute;

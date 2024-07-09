@@ -524,7 +524,6 @@ func (s *APIService) UserMeRequestEmailCredentialPost(ctx context.Context) (open
 		logger.Info().Msg(errMsg)
 		return openapi.Response(http.StatusBadRequest, errMsg), nil
 	}
-	identityCommitment := user.IdentityCommitment
 
 	// issue email credential
 	revocable := int64(0)
@@ -545,7 +544,7 @@ func (s *APIService) UserMeRequestEmailCredentialPost(ctx context.Context) (open
 			Attachments: map[string]string{"email": userEmail},
 		},
 		ChainId:            uint64(s.issuerChainID),
-		IdentityCommitment: identityCommitment,
+		IdentityCommitment: user.IdentityCommitment,
 		ExpiredAt:          fmt.Sprint(time.Now().Add(emailCredentialValidDuration).Unix()), // TODO
 	})
 	if err != nil {
