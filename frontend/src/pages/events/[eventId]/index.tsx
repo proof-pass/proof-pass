@@ -21,7 +21,6 @@ import {
     utils,
     issuer,
 } from '@galxe-identity-protocol/sdk';
-import { ethers } from 'ethers';
 import { decryptValue, encryptValue } from '@/utils/utils';
 import { setToken } from '@/utils/auth';
 
@@ -292,10 +291,6 @@ const EventDetailPage: React.FC = () => {
         try {
             await prepare();
 
-            const provider = new ethers.JsonRpcProvider(
-                'https://cloudflare-eth.com',
-            );
-
             const u = new user.User();
             const userDetails = await api.userMeGet();
 
@@ -456,12 +451,12 @@ const EventDetailPage: React.FC = () => {
             console.log('Proof generation parameters set up successfully.');
 
             console.log('Downloading proof generation gadgets...');
-            const proofGenGadgets =
-                await user.User.fetchProofGenGadgetsByTypeID(
-                    cred.header.type,
-                    provider,
-                );
+            const proofGenGadgets = await user.User.fetchProofGenGadgetByURIs(
+                "https://storage.cloud.google.com/protocol-gadgets/unit/circom.wasm",
+                "https://storage.cloud.google.com/protocol-gadgets/unit/circuit_final.zkey"
+            );
             console.log('Proof generation gadgets downloaded successfully.');
+
 
             const proof = await u.genBabyzkProofWithQuery(
                 identityCommitment,
