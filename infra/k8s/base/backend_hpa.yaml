@@ -2,6 +2,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: backend
+  namespace: app
 spec:
   maxReplicas: 5
   metrics:
