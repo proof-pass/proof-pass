@@ -273,6 +273,8 @@ components:
           type: string
         encrypted_identity_secret:
           type: string
+        is_encrypted:
+          type: boolean
         created_at:
           type: string
           format: date-time

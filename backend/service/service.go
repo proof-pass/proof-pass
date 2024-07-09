@@ -212,8 +212,8 @@ func (s *APIService) EventsEventIdRequestTicketCredentialPost(ctx context.Contex
 			Attachments: map[string]string{"event_id": eventId},
 		},
 		ChainId:            uint64(s.issuerChainID),
-		IdentityCommitment: user.IdentityCommitment,                           // ticket credential is issued to the email
-		ExpiredAt:          fmt.Sprint(time.Now().Add(time.Hour * 24).Unix()), // TODO
+		IdentityCommitment: user.IdentityCommitment,                                 // ticket credential is issued to the email
+		ExpiredAt:          fmt.Sprint(time.Now().Add(time.Hour * 24 * 265).Unix()), // one year
 	})
 	if err != nil {
 		logger.Err(err).Msg("Failed to generate ticket credential")
@@ -286,7 +286,7 @@ func (s *APIService) UserLoginPost(ctx context.Context, userLogin openapi.UserLo
 				IdentityCommitment:         "",
 				EncryptedInternalNullifier: "",
 				EncryptedIdentitySecret:    "",
-				TemporaryPassword:          "",
+				IsEncrypted:                true,
 			})
 			if err != nil {
 				return openapi.Response(http.StatusInternalServerError, nil), err
@@ -555,7 +555,7 @@ func (s *APIService) UserMeRequestEmailCredentialPost(ctx context.Context) (open
 	return openapi.Response(http.StatusCreated, openapi.UnencryptedEmailCredential{
 		Credential: resp.GetSignedCred(),
 		IssuedAt:   time.Now(),
-		ExpireAt:   time.Now().Add(time.Hour * 24),
+		ExpireAt:   time.Now().Add(time.Hour * 24 * 14),
 	}), nil
 }
 

@@ -35,6 +35,7 @@ func MarshalUser(user users.User) openapi.User {
 		IdentityCommitment:         user.IdentityCommitment,
 		EncryptedInternalNullifier: user.EncryptedInternalNullifier,
 		EncryptedIdentitySecret:    user.EncryptedIdentitySecret,
+		IsEncrypted:                user.IsEncrypted,
 		CreatedAt:                  user.CreatedAt.Time,
 	}
 }

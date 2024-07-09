@@ -4,7 +4,7 @@ CREATE TABLE users (
     identity_commitment VARCHAR NOT NULL,
     encrypted_internal_nullifier VARCHAR NOT NULL,
     encrypted_identity_secret VARCHAR NOT NULL,
-    temporary_password VARCHAR NOT NULL,
+    is_encrypted BOOLEAN NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

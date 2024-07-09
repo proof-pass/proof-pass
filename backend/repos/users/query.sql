@@ -15,7 +15,7 @@ INSERT INTO users (
         identity_commitment,
         encrypted_internal_nullifier,
         encrypted_identity_secret,
-        temporary_password,
+        is_encrypted,
         created_at
     )
 VALUES ($1, $2, $3, $4, $5, $6, NOW())

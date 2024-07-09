@@ -29,6 +29,8 @@ type User struct {
 
 	EncryptedIdentitySecret string `json:"encrypted_identity_secret,omitempty"`
 
+	IsEncrypted bool `json:"is_encrypted,omitempty"`
+
 	CreatedAt time.Time `json:"created_at,omitempty"`
 }
 

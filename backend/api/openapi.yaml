@@ -287,6 +287,7 @@ components:
       example:
         encrypted_internal_nullifier: encrypted_internal_nullifier
         identity_commitment: identity_commitment
+        is_encrypted: true
         encrypted_identity_secret: encrypted_identity_secret
         created_at: 2000-01-23T04:56:07.000+00:00
         id: id
@@ -302,6 +303,8 @@ components:
           type: string
         encrypted_identity_secret:
           type: string
+        is_encrypted:
+          type: boolean
         created_at:
           format: date-time
           type: string
