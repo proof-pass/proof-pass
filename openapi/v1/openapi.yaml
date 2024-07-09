@@ -228,6 +228,12 @@ components:
           type: string
         issuer_key_id:
           type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
     RecordAttendanceRequest:
       type: object
       properties:

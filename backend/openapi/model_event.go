@@ -11,6 +11,10 @@
 package openapi
 
 
+import (
+	"time"
+)
+
 
 
 type Event struct {
@@ -28,6 +32,10 @@ type Event struct {
 	ContextId string `json:"context_id,omitempty"`
 
 	IssuerKeyId string `json:"issuer_key_id,omitempty"`
+
+	StartDate time.Time `json:"start_date,omitempty"`
+
+	EndDate time.Time `json:"end_date,omitempty"`
 }
 
 // AssertEventRequired checks if the required fields are not zero-ed

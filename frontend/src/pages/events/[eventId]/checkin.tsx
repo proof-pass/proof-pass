@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 import { useRouter } from 'next/router';
@@ -86,7 +87,7 @@ const CheckInPage: React.FC = () => {
                 });
 
                 const expectedTypeID = credType.primitiveTypes.unit.type_id;
-                console.log(event);
+                console.log(event!.contextId!);
                 const expectedContextID = BigInt(event!.contextId!);
                 const expectedIssuerID = BigInt(event!.issuerKeyId!);
 
@@ -131,7 +132,7 @@ const CheckInPage: React.FC = () => {
                 return 'Failed to verify the proof. Please try again.';
             }
         },
-        [eventId],
+        [eventId, event],
     );
 
     const recordAttendance = useCallback(

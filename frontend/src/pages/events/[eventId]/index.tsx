@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import styled from 'styled-components';
@@ -417,9 +419,7 @@ const EventDetailPage: React.FC = () => {
 
             const externalNullifier =
                 utils.computeExternalNullifier(contextString);
-            const expiredAtLowerBound = BigInt(
-                Math.ceil(new Date().getTime() / 1000),
-            );
+            const expiredAtLowerBound = BigInt(1);
 
             const equalCheckId = BigInt(0);
             const pseudonym = BigInt(0);

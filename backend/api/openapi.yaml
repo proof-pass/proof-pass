@@ -214,6 +214,7 @@ components:
   schemas:
     Event:
       example:
+        end_date: 2000-01-23T04:56:07.000+00:00
         chain_id: chain_id
         name: name
         description: description
@@ -221,6 +222,7 @@ components:
         issuer_key_id: issuer_key_id
         id: id
         url: url
+        start_date: 2000-01-23T04:56:07.000+00:00
       properties:
         id:
           type: string
@@ -235,6 +237,12 @@ components:
         context_id:
           type: string
         issuer_key_id:
+          type: string
+        start_date:
+          format: date-time
+          type: string
+        end_date:
+          format: date-time
           type: string
       type: object
     RecordAttendanceRequest:
