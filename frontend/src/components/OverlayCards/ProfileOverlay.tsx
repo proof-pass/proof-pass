@@ -114,14 +114,12 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
                     <DetailItem>
                         <Label>Identity Secret:</Label>
                         <SecretValue>
-                            <SecretContent>
-                                {showIdentitySecret
-                                    ? decryptedIdentitySecret
-                                    : '******'}
-                            </SecretContent>
-                            <RevealButton onClick={handleToggleIdentitySecret}>
-                                {showIdentitySecret ? 'Hide' : 'Show'}
-                            </RevealButton>
+                          <SecretContent>
+                            {showIdentitySecret ? decryptedIdentitySecret : '******'}
+                          </SecretContent>
+                          <RevealButton onClick={handleToggleIdentitySecret}>
+                            {showIdentitySecret ? 'Hide' : 'Show'}
+                          </RevealButton>
                         </SecretValue>
                     </DetailItem>
                     <DetailItem>
@@ -166,51 +164,40 @@ const DetailItem = styled.div`
 `;
 
 const SecretValue = styled.div`
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    color: #000;
-    overflow-x: auto;
-    white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 16px;
+  color: #000;
+  overflow-x: hidden;
+`;
 
-    &::-webkit-scrollbar {
-        height: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-        background: #e0e0e0;
-        border-radius: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background: #a3aab8;
-        border-radius: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb:hover {
-        background: #8c8c8c;
-    }
+const RevealButton = styled.button`
+  background-color: #5eb7ff;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  min-width: 80px; // Set a minimum width
+  flex-shrink: 0; // Prevent button from shrinking
+  
+  &:hover {
+    opacity: 0.9;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
 `;
 
 const SecretContent = styled.span`
     overflow-x: auto;
     white-space: nowrap;
-`;
-
-const RevealButton = styled.button`
-    background-color: #5eb7ff;
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    cursor: pointer;
-    border-radius: 8px;
-    white-space: nowrap;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    &:hover {
-        opacity: 0.9;
-    }
 `;
 
 const Label = styled.strong`
