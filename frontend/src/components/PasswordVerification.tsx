@@ -22,7 +22,7 @@ const PasswordVerification: React.FC<PasswordVerificationProps> = ({
 
     React.useEffect(() => {
         if (!is_encrypted) {
-            setAuthPassword(hashPassword(''));
+            setAuthPassword('');
             onPasswordVerified();
         }
     }, [is_encrypted, onPasswordVerified]);

@@ -5,7 +5,6 @@ import { useRouter } from 'next/router';
 import { setAuthPassword, setupUserCredentials } from '@/utils/utils';
 import { DefaultApi, Configuration } from '@/api';
 import { getToken } from '@/utils/auth';
-import { hashPassword } from '@/utils/utils';
 
 const PasswordSetup: React.FC = () => {
     const [passwordVisible, setPasswordVisible] = useState(false);
@@ -35,7 +34,7 @@ const PasswordSetup: React.FC = () => {
 
                 if (!userResponse.isEncrypted) {
                     // If not encrypted, set default empty password and redirect to dashboard
-                    setAuthPassword(hashPassword(''));
+                    setAuthPassword('');
                     router.push('/dashboard');
                     return;
                 }

@@ -3,10 +3,10 @@ import styled from 'styled-components';
 import { useRouter } from 'next/router';
 import { DefaultApi, Configuration } from '@/api';
 import { setToken } from '@/utils/auth';
-import { setAuthPassword, hashPassword } from '@/utils/utils';
+import { setAuthPassword } from '@/utils/utils';
 
 interface LoginFormProps {
-    onPasswordVerificationRequired: (nullifier: string) => void;
+    onPasswordVerificationRequired: (nullifier: string, isEncrypted: boolean) => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({
@@ -87,32 +87,30 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsSubmitting(true);
-
+    
         try {
             const api = new DefaultApi();
             const response = await api.userLoginPost({
                 userLogin: { email, code },
             });
-
+    
             if (response && response.token) {
                 setToken(response.token);
-
-                const userDetails =
-                    await checkIdentityCommitmentAndSetNullifier(
-                        response.token,
-                    );
+    
+                const userDetails = await checkIdentityCommitmentAndSetNullifier(response.token);
+                
                 if (userDetails === null) {
                     // User is not encrypted, already redirected to dashboard
+                    onPasswordVerificationRequired('', false);
                     return;
-                } else if (
-                    userDetails &&
-                    userDetails.encryptedInternalNullifier
-                ) {
+                } else if (userDetails && userDetails.encryptedInternalNullifier) {
+                    // User is encrypted and has an internal nullifier
                     onPasswordVerificationRequired(
                         userDetails.encryptedInternalNullifier,
+                        true
                     );
                 } else {
+                    // User needs to set up a password
                     router.push('/password');
                 }
             }
@@ -133,13 +131,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
         if (!response.isEncrypted) {
             // Set a default empty password for future encryption/decryption
-            setAuthPassword(hashPassword(''));
+            setAuthPassword('');
             router.push('/dashboard');
             return null;
         }
 
         return response;
     };
+
 
     return (
         <Form onSubmit={handleSubmit}>

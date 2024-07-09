@@ -45,6 +45,9 @@ const CheckInPage: React.FC = () => {
     const [isQuickCheckIn, setIsQuickCheckIn] = useState(false);
     const [eventDetailsFetched, setEventDetailsFetched] = useState(false);
     const [scanner, setScanner] = useState<Html5QrcodeScanner | null>(null);
+    const [showPopup, setShowPopup] = useState(false);
+    const [popupMessage, setPopupMessage] = useState('');
+    const [popupSuccess, setPopupSuccess] = useState(false);
 
     const unauthenticatedApi = useMemo(() => {
         return new DefaultApi(
@@ -259,7 +262,7 @@ const CheckInPage: React.FC = () => {
     const onScanSuccess = useCallback(
         async (decodedText: string) => {
             if (!event) return;
-
+    
             try {
                 await prepare();
                 setError(null);
@@ -267,34 +270,40 @@ const CheckInPage: React.FC = () => {
                 const proof: babyzkTypes.WholeProof = JSON.parse(decodedText);
                 const verificationResult = await verifyProof(proof);
                 setVerified(verificationResult);
-
+    
                 if (verificationResult) {
                     if (isHostLoggedIn) {
                         await recordAttendance(event.id, proof, adminCode);
+                        setPopupMessage('Verified, attendance recorded!');
+                        setPopupSuccess(true);
                     } else {
                         setVerified(true);
+                        setPopupMessage('Verified!');
+                        setPopupSuccess(true);
                     }
+                } else {
+                    setPopupMessage('Verification failed. Please try again.');
+                    setPopupSuccess(false);
                 }
+                setShowPopup(true);
             } catch (error: unknown) {
                 console.error('Error verifying proof:', error);
                 setVerified(false);
-
+    
                 if (error instanceof Error) {
                     if (error.message.includes('Context ID mismatch')) {
-                        setContextMismatchError(
-                            'This ticket is for a different event. Please check and try again.',
-                        );
+                        setPopupMessage('This ticket is for a different event. Please check and try again.');
                     } else {
-                        setError(
-                            'Failed to verify the QR code. Please try again.',
-                        );
+                        setPopupMessage('Failed to verify the QR code. Please try again.');
                     }
                 } else {
-                    setError('An unexpected error occurred. Please try again.');
+                    setPopupMessage('An unexpected error occurred. Please try again.');
                 }
+                setPopupSuccess(false);
+                setShowPopup(true);
             }
         },
-        [event, isHostLoggedIn, adminCode, verifyProof, recordAttendance],
+        [event, isHostLoggedIn, adminCode, verifyProof, recordAttendance]
     );
 
     const handleGoBack = async () => {
@@ -467,6 +476,14 @@ const CheckInPage: React.FC = () => {
                     height={104}
                 />
             </SVGIconSpace>
+            {showPopup && (
+            <Popup>
+                <PopupText style={{ color: popupSuccess ? '#4ecdc4' : '#ff6b6b' }}>
+                    {popupMessage}
+                </PopupText>
+                <PopupButton onClick={() => setShowPopup(false)}>Close</PopupButton>
+            </Popup>
+        )}
         </MainContainer>
     );
 };
@@ -571,7 +588,40 @@ const LoginMessage = styled.div`
         }
     }
 `;
+const Popup = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  text-align: center;
+  animation: fadeIn 0.3s ease-out;
 
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+`;
+
+const PopupText = styled.p`
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 15px;
+`;
+
+const PopupButton = styled.button`
+  background-color: #FF8151;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+`;
 const PlanetOverlay = styled.div`
     position: absolute;
     top: 0;

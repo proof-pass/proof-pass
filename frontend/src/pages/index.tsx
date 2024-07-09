@@ -1,20 +1,44 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import Image from 'next/image';
 import LoginForm from '../components/LoginForm';
 import PasswordVerification from '../components/PasswordVerification';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import { getToken } from '@/utils/auth';
+import { Configuration, DefaultApi } from '@/api';
 
 const HomePage: React.FC = () => {
-    const [showPasswordVerification, setShowPasswordVerification] =
-        useState(false);
-    const [encryptedInternalNullifier, setEncryptedInternalNullifier] =
-        useState('');
+    const [showPasswordVerification, setShowPasswordVerification] = useState(false);
+    const [encryptedInternalNullifier, setEncryptedInternalNullifier] = useState('');
+    const [isEncrypted, setIsEncrypted] = useState(true);
     const router = useRouter();
 
-    const handlePasswordVerificationRequired = (nullifier: string) => {
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const authToken = getToken();
+                if (authToken) {
+                    const config = new Configuration({
+                        accessToken: authToken,
+                    });
+                    const authenticatedApi = new DefaultApi(config);
+                    const userResponse = await authenticatedApi.userMeGet();
+                    if (userResponse.isEncrypted !== undefined) {
+                        setIsEncrypted(userResponse.isEncrypted);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
+    const handlePasswordVerificationRequired = (nullifier: string, isEncrypted: boolean) => {
         setEncryptedInternalNullifier(nullifier);
+        setIsEncrypted(isEncrypted);
         setShowPasswordVerification(true);
     };
 
@@ -39,11 +63,9 @@ const HomePage: React.FC = () => {
                 <Card>
                     {showPasswordVerification ? (
                         <PasswordVerification
-                            encryptedInternalNullifier={
-                                encryptedInternalNullifier
-                            }
+                            encryptedInternalNullifier={encryptedInternalNullifier}
                             onPasswordVerified={handlePasswordVerified}
-                            is_encrypted={false}
+                            is_encrypted={isEncrypted}
                         />
                     ) : (
                         <>
@@ -51,9 +73,7 @@ const HomePage: React.FC = () => {
                                 Enter your email to log in or register
                             </Instruction>
                             <LoginForm
-                                onPasswordVerificationRequired={
-                                    handlePasswordVerificationRequired
-                                }
+                                onPasswordVerificationRequired={handlePasswordVerificationRequired}
                             />
                         </>
                     )}

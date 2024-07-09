@@ -62,12 +62,6 @@ const ContentItem = styled.div`
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 `;
 
-const Label = styled.strong`
-    color: #000;
-    font-weight: 600;
-    font-size: 16px;
-`;
-
 const Content = styled.div`
     font-size: 16px;
     color: #000;
