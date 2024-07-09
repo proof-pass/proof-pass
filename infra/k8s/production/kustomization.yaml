@@ -26,7 +26,7 @@ configMapGenerator:
     namespace: app
   - behavior: merge
     literals:
-      - ISSUER_ID=125344402375953606533377270523694284815265854046 # TODO: update me
+      - ISSUER_ID=510272064749248819730000788014960283495993569847
     name: issuer
     namespace: app
   - behavior: merge
