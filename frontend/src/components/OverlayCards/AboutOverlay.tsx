@@ -8,8 +8,37 @@ const AboutOverlay: React.FC<AboutOverlayProps> = ({ onClose }) => {
         <OverlayCard title="About the Project" onClose={onClose}>
             <ContentContainer>
                 <ContentItem>
-                    <Label>About:</Label>
-                    <Content>Explore our amazing project!</Content>
+                    <Content>
+                        <p>
+                            <strong>Proof Pass</strong> is a tangible ZKP-based
+                            ticketing application powered by the{' '}
+                            <strong>
+                                <a
+                                    href="https://docs.galxe.com/identity/introduction"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Galxe Identity Protocol
+                                </a>
+                            </strong>{' '}
+                            and{' '}
+                            <strong>
+                                <a
+                                    href="https://nebra.one"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    NEBRA UPA
+                                </a>
+                            </strong>
+                        </p>
+                        <p>
+                            It bridges the gap of email-based ticketing and ZK
+                            ticket verification, making event management more
+                            secure and bringing ZKP technology closer to the end
+                            users.
+                        </p>
+                    </Content>
                 </ContentItem>
             </ContentContainer>
         </OverlayCard>
