@@ -6,7 +6,6 @@ import { DefaultApi, Configuration, User } from '@/api';
 import { useRouter } from 'next/router';
 import { getToken, removeToken } from '@/utils/auth';
 import { decryptValue } from '@/utils/utils';
-import { bech32 } from 'bech32';
 
 const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
     onClose,
@@ -16,14 +15,10 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
     const [showIdentitySecret, setShowIdentitySecret] = useState(false);
     const [showInternalNullifier, setShowInternalNullifier] = useState(false);
     const [decryptedIdentitySecret, setDecryptedIdentitySecret] = useState('');
-    const [decryptedInternalNullifier, setDecryptedInternalNullifier] = useState('');
+    const [decryptedInternalNullifier, setDecryptedInternalNullifier] =
+        useState('');
     const [message, setMessage] = useState('');
     const router = useRouter();
-
-    const bufferToBech32 = (buffer: ArrayBuffer, prefix: string = 'secret'): string => {
-        const words = bech32.toWords(Buffer.from(buffer));
-        return bech32.encode(prefix, words);
-    };
 
     const handleLogout = useCallback(() => {
         removeToken();
@@ -57,37 +52,45 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
         fetchUserDetails();
     }, [router, handleLogout]);
 
-      const handleToggleIdentitySecret = () => {
+    const handleToggleIdentitySecret = () => {
         const hashedPassword = localStorage.getItem('auth_password');
-        if (hashedPassword && userDetails && userDetails.encryptedIdentitySecret) {
+        if (
+            hashedPassword &&
+            userDetails &&
+            userDetails.encryptedIdentitySecret
+        ) {
             if (showIdentitySecret) {
                 setShowIdentitySecret(false);
             } else {
-                const decryptedHex = decryptValue(userDetails.encryptedIdentitySecret, hashedPassword);
-                const bech32Value = bufferToBech32(Buffer.from(decryptedHex.slice(2), 'hex'));
-                setDecryptedIdentitySecret(bech32Value);
+                const decryptedHex = decryptValue(
+                    userDetails.encryptedIdentitySecret,
+                    hashedPassword,
+                );
+                setDecryptedIdentitySecret(decryptedHex);
                 setShowIdentitySecret(true);
             }
         }
     };
-    
+
     const handleToggleInternalNullifier = () => {
         const hashedPassword = localStorage.getItem('auth_password');
-        if (hashedPassword && userDetails && userDetails.encryptedInternalNullifier) {
+        if (
+            hashedPassword &&
+            userDetails &&
+            userDetails.encryptedInternalNullifier
+        ) {
             if (showInternalNullifier) {
                 setShowInternalNullifier(false);
             } else {
-                const decryptedHex = decryptValue(userDetails.encryptedInternalNullifier, hashedPassword);
-                const bech32Value = bufferToBech32(Buffer.from(decryptedHex.slice(2), 'hex'));
-                setDecryptedInternalNullifier(bech32Value);
+                const decryptedHex = decryptValue(
+                    userDetails.encryptedInternalNullifier,
+                    hashedPassword,
+                );
+                setDecryptedInternalNullifier(decryptedHex);
                 setShowInternalNullifier(true);
             }
         }
     };
-
-    const handleIdentityCommitmentConvert = (identityCommitment: string) => {
-        return bufferToBech32(Buffer.from(identityCommitment.slice(2), 'hex'), 'ic');
-    }
 
     return (
         <OverlayCard
@@ -105,7 +108,7 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
                     <DetailItem>
                         <Label>Identity Commitment:</Label>
                         <DetailContent>
-                            {handleIdentityCommitmentConvert(userDetails.identityCommitment ?? '')}
+                            {userDetails.identityCommitment ?? ''}
                         </DetailContent>
                     </DetailItem>
                     <DetailItem>
@@ -116,9 +119,7 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
                                     ? decryptedIdentitySecret
                                     : '******'}
                             </SecretContent>
-                            <RevealButton
-                                onClick={handleToggleIdentitySecret}
-                            >
+                            <RevealButton onClick={handleToggleIdentitySecret}>
                                 {showIdentitySecret ? 'Hide' : 'Show'}
                             </RevealButton>
                         </SecretValue>
@@ -246,7 +247,9 @@ const DetailContent = styled.div`
 
 const Message = styled.p`
     color: #ff6b6b;
-    font: 500 14px/150% 'Inter', sans-serif;
+    font:
+        500 14px/150% 'Inter',
+        sans-serif;
     margin: 0;
 `;
 

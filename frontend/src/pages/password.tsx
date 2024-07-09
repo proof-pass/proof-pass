@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { setupUserCredentials } from '@/utils/utils';
+import { setAuthPassword, setupUserCredentials } from '@/utils/utils';
 import { DefaultApi, Configuration } from '@/api';
 import { getToken } from '@/utils/auth';
+import { hashPassword } from '@/utils/utils';
 
 const PasswordSetup: React.FC = () => {
     const [passwordVisible, setPasswordVisible] = useState(false);
@@ -19,18 +20,8 @@ const PasswordSetup: React.FC = () => {
 
     const handleSavePasswordAndCredentials = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (password.length === 0) {
-            setMessage('Please enter a password');
-            return;
-        }
 
         try {
-            const {
-                encryptedInternalNullifier,
-                encryptedIdentitySecret,
-                identityCommitment,
-            } = setupUserCredentials(password);
-
             const authToken = getToken();
 
             if (authToken) {
@@ -39,6 +30,26 @@ const PasswordSetup: React.FC = () => {
                 });
 
                 const authenticatedApi = new DefaultApi(config);
+
+                const userResponse = await authenticatedApi.userMeGet();
+
+                if (!userResponse.isEncrypted) {
+                    // If not encrypted, set default empty password and redirect to dashboard
+                    setAuthPassword(hashPassword(''));
+                    router.push('/dashboard');
+                    return;
+                }
+
+                if (password.length === 0) {
+                    setMessage('Please enter a password');
+                    return;
+                }
+
+                const {
+                    encryptedInternalNullifier,
+                    encryptedIdentitySecret,
+                    identityCommitment,
+                } = setupUserCredentials(password);
 
                 await authenticatedApi.userUpdatePut({
                     userUpdate: {

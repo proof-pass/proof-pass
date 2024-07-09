@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useRouter } from 'next/router';
 import { DefaultApi, Configuration } from '@/api';
 import { setToken } from '@/utils/auth';
+import { setAuthPassword, hashPassword } from '@/utils/utils';
 
 interface LoginFormProps {
     onPasswordVerificationRequired: (nullifier: string) => void;
@@ -54,7 +55,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
             await api.userRequestVerificationCodePost({
                 userEmailVerificationRequest: { email: email },
             });
-            setMessage('Verification code sent to your email. Please also make sure to check your spam or junk folder.');
+            setMessage(
+                'Verification code sent to your email. Please also make sure to check your spam or junk folder.',
+            );
             setStage('confirmation-code');
         } catch (error) {
             setMessage('Failed to send verification code.');
@@ -99,7 +102,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     await checkIdentityCommitmentAndSetNullifier(
                         response.token,
                     );
-                if (userDetails && userDetails.encryptedInternalNullifier) {
+                if (userDetails === null) {
+                    // User is not encrypted, already redirected to dashboard
+                    return;
+                } else if (
+                    userDetails &&
+                    userDetails.encryptedInternalNullifier
+                ) {
                     onPasswordVerificationRequired(
                         userDetails.encryptedInternalNullifier,
                     );
@@ -121,6 +130,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
         const authenticatedApi = new DefaultApi(config);
 
         const response = await authenticatedApi.userMeGet();
+
+        if (!response.isEncrypted) {
+            // Set a default empty password for future encryption/decryption
+            setAuthPassword(hashPassword(''));
+            router.push('/dashboard');
+            return null;
+        }
+
         return response;
     };
 

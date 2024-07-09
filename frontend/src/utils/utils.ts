@@ -59,7 +59,10 @@ function decryptValue(encryptedValue: string, hashedPassword: string): string {
         decipher.final(),
     ]);
 
-    if (decrypted.length === 32 && decrypted.every(byte => byte >= 0 && byte <= 255)) {
+    if (
+        decrypted.length === 32 &&
+        decrypted.every((byte) => byte >= 0 && byte <= 255)
+    ) {
         return '0x' + decrypted.toString('hex');
     } else {
         return decrypted.toString('utf8');

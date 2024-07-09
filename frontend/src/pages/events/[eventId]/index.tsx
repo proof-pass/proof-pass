@@ -77,26 +77,26 @@ const EventDetailPage: React.FC = () => {
                 if (jwt && proof) {
                     console.log('Quick login with proof:', proof);
                     setToken(jwt);
-    
+
                     // Parse the proof from the URL
                     const parsedProof = JSON.parse(proof);
                     const proofString = JSON.stringify(parsedProof);
-    
+
                     // Set the QR code value directly from the parsed proof
                     setQrCodeValue((prev) => ({
                         ...prev,
                         [eventId as string]: proofString,
                     }));
-    
+
                     // Mark the proof as generated
                     setProofGenerated((prev) => ({
                         ...prev,
                         [eventId as string]: true,
                     }));
-    
+
                     // Set hasTicket to true since we have a valid proof
                     setHasTicket(true);
-    
+
                     // Remove the jwt and proof from the URL
                     window.history.replaceState(
                         {},
@@ -111,7 +111,7 @@ const EventDetailPage: React.FC = () => {
         },
         [eventId],
     );
-    
+
     useEffect(() => {
         const fetchEventDetails = async () => {
             if (eventId) {
@@ -119,18 +119,25 @@ const EventDetailPage: React.FC = () => {
                     const eventDetails = await api.eventsEventIdGet({
                         eventId: eventId as string,
                     });
+                    console.log(
+                        'Event details in fetchEventDetails:',
+                        eventDetails,
+                    );
                     if (!eventDetails) {
+                        console.log('!eventDetails');
                         setEventNotFound(true);
                     } else {
+                        console.log('eventDetails');
                         setEvent(eventDetails);
                     }
-    
+
                     // Only perform quick login if both jwt and proof are present
                     if (jwt && proof) {
                         await handleQuickLogin(jwt as string, proof as string);
                     } else {
                         // Check for existing ticket credential only if not doing quick login
-                        const credentials = await api.userMeTicketCredentialsGet();
+                        const credentials =
+                            await api.userMeTicketCredentialsGet();
                         const eventTicket = credentials.find(
                             (cred) => cred.eventId === eventId,
                         );
@@ -148,7 +155,7 @@ const EventDetailPage: React.FC = () => {
                 }
             }
         };
-    
+
         fetchEventDetails();
     }, [eventId, jwt, proof, api, handleQuickLogin]);
 
@@ -156,22 +163,31 @@ const EventDetailPage: React.FC = () => {
         setIsRequestingCredential(true);
         try {
             // First, request the ticket credential
-            const unencryptedTicket = await api.eventsEventIdRequestTicketCredentialPost({
-                eventId: eventId as string,
-            });
-    
-            console.log('Unencrypted ticket credential received:', unencryptedTicket);
-    
+            const unencryptedTicket =
+                await api.eventsEventIdRequestTicketCredentialPost({
+                    eventId: eventId as string,
+                });
+
+            console.log(
+                'Unencrypted ticket credential received:',
+                unencryptedTicket,
+            );
+
             if (unencryptedTicket && unencryptedTicket.credential) {
                 // Encrypt the ticket credential
                 const hashedPassword = localStorage.getItem('auth_password');
                 if (!hashedPassword) {
                     throw new Error('Authentication password not found');
                 }
-    
-                const credentialString = JSON.stringify(unencryptedTicket.credential);
-                const encryptedData = encryptValue(credentialString, hashedPassword);
-    
+
+                const credentialString = JSON.stringify(
+                    unencryptedTicket.credential,
+                );
+                const encryptedData = encryptValue(
+                    credentialString,
+                    hashedPassword,
+                );
+
                 // Store the encrypted ticket credential
                 await api.userMeTicketCredentialPut({
                     putTicketCredentialRequest: {
@@ -181,26 +197,40 @@ const EventDetailPage: React.FC = () => {
                         expireAt: unencryptedTicket.expireAt || new Date(),
                     },
                 });
-    
+
                 console.log('Encrypted ticket credential stored successfully');
-    
+
                 // Fetch the stored encrypted ticket credential
-                const allTicketCredentials = await api.userMeTicketCredentialsGet();
-                const encryptedTicket = allTicketCredentials.find(ticket => ticket.eventId === eventId);
-    
+                const allTicketCredentials =
+                    await api.userMeTicketCredentialsGet();
+                const encryptedTicket = allTicketCredentials.find(
+                    (ticket) => ticket.eventId === eventId,
+                );
+
                 if (encryptedTicket && encryptedTicket.data) {
                     setHasTicket(true);
                     setTicketCredential(encryptedTicket);
-                    console.log('Encrypted ticket credential retrieved:', encryptedTicket);
+                    console.log(
+                        'Encrypted ticket credential retrieved:',
+                        encryptedTicket,
+                    );
                 } else {
-                    throw new Error('Failed to retrieve stored encrypted ticket data');
+                    throw new Error(
+                        'Failed to retrieve stored encrypted ticket data',
+                    );
                 }
             } else {
-                throw new Error('Failed to receive unencrypted ticket credential');
+                throw new Error(
+                    'Failed to receive unencrypted ticket credential',
+                );
             }
         } catch (error) {
             console.error('Error in ticket credential process:', error);
-            handleError(error instanceof Error ? error.message : "Failed in ticket credential process");
+            handleError(
+                error instanceof Error
+                    ? error.message
+                    : 'Failed in ticket credential process',
+            );
         } finally {
             setIsRequestingCredential(false);
         }
@@ -215,14 +245,17 @@ const EventDetailPage: React.FC = () => {
             }));
             return;
         }
-    
+
         if (!ticketCredential) {
             console.error('No ticket credential available');
             setErrorMessage('No ticket credential available');
             return;
         }
-    
-        setIsGeneratingProof((prev) => ({ ...prev, [eventId as string]: true }));
+
+        setIsGeneratingProof((prev) => ({
+            ...prev,
+            [eventId as string]: true,
+        }));
         setErrorMessage(null);
         try {
             console.log('Generate proof for:', ticketCredential);
@@ -245,7 +278,10 @@ const EventDetailPage: React.FC = () => {
                 `Failed to generate proof: ${error instanceof Error ? error.message : String(error)}`,
             );
         } finally {
-            setIsGeneratingProof((prev) => ({ ...prev, [eventId as string]: false }));
+            setIsGeneratingProof((prev) => ({
+                ...prev,
+                [eventId as string]: false,
+            }));
         }
     };
 
@@ -255,14 +291,14 @@ const EventDetailPage: React.FC = () => {
     ): Promise<string> => {
         try {
             await prepare();
-    
+
             const provider = new ethers.JsonRpcProvider(
-                'https://cloudflare-eth.com'
+                'https://cloudflare-eth.com',
             );
-    
+
             const u = new user.User();
             const userDetails = await api.userMeGet();
-    
+
             if (
                 !userDetails.encryptedIdentitySecret ||
                 !userDetails.encryptedInternalNullifier
@@ -274,7 +310,7 @@ const EventDetailPage: React.FC = () => {
             if (!hashedPassword) {
                 throw new Error('Authentication password not found');
             }
-    
+
             const decryptedIdentitySecret = decryptValue(
                 userDetails.encryptedIdentitySecret,
                 hashedPassword,
@@ -283,9 +319,12 @@ const EventDetailPage: React.FC = () => {
                 userDetails.encryptedInternalNullifier,
                 hashedPassword,
             );
-    
+
             console.log('Decrypted Identity Secret:', decryptedIdentitySecret);
-            console.log('Decrypted Internal Nullifier:', decryptedInternalNullifier);
+            console.log(
+                'Decrypted Internal Nullifier:',
+                decryptedInternalNullifier,
+            );
 
             let identitySecretBigInt: bigint | undefined;
             let internalNullifierBigInt: bigint | undefined;
@@ -294,70 +333,84 @@ const EventDetailPage: React.FC = () => {
                 identitySecretBigInt = BigInt(decryptedIdentitySecret);
                 internalNullifierBigInt = BigInt(decryptedInternalNullifier);
 
-
-                    console.log('Identity Secret as BigInt:', identitySecretBigInt.toString());
-                    console.log('Internal Nullifier as BigInt:', internalNullifierBigInt.toString());
+                console.log(
+                    'Identity Secret as BigInt:',
+                    identitySecretBigInt.toString(),
+                );
+                console.log(
+                    'Internal Nullifier as BigInt:',
+                    internalNullifierBigInt.toString(),
+                );
             } catch (error) {
-                console.error('Error converting decrypted values to BigInt:', error);
+                console.error(
+                    'Error converting decrypted values to BigInt:',
+                    error,
+                );
                 throw new Error('Decrypted values are not valid numbers');
             }
-    
+
             const identitySlice: user.IdentitySlice = {
                 identitySecret: identitySecretBigInt,
                 internalNullifier: internalNullifierBigInt,
                 domain: 'evm',
             };
-    
+
             u.addIdentitySlice(identitySlice);
             console.log(
-                'User set up successfully with decrypted identity slice.'
+                'User set up successfully with decrypted identity slice.',
             );
-    
+
             const identityCommitment = u.getIdentityCommitment('evm');
             if (!identityCommitment) {
                 throw new Error('Failed to get identity commitment');
             }
             console.log('Identity commitment:', identityCommitment.toString());
-    
+
             if (!ticket.data) {
                 throw new Error('Ticket data is missing');
             }
-    
+
             console.log('Raw ticket data before decryption:', ticket.data);
-    
+
             // Decrypt the ticket data
-            const decryptedTicketData = decryptValue(ticket.data, hashedPassword);
+            const decryptedTicketData = decryptValue(
+                ticket.data,
+                hashedPassword,
+            );
             console.log('Decrypted ticket data:', decryptedTicketData);
-    
+
             let ticketData;
             try {
                 // Parse the decrypted ticket data, which is a string representation of JSON
                 ticketData = JSON.parse(decryptedTicketData);
-                
+
                 // Parse the inner JSON string
                 ticketData = JSON.parse(ticketData);
             } catch (error) {
                 console.error('Error parsing decrypted ticket data:', error);
                 throw new Error('Invalid ticket data format');
             }
-    
+
             const unitTypeSpec = credType.primitiveTypes.unit;
             const unitType = errors.unwrap(
                 credType.createTypeFromSpec(unitTypeSpec),
             );
             console.log('Credential type created successfully.');
-    
+
             const contextString = `Event Ticket: ${ticket.eventId || 'unknown'}`;
             const contextID = credential.computeContextID(contextString);
 
             console.log('Preparing to generate proof with the following data:');
-            console.log('Parsed ticket data:', JSON.stringify(ticketData, null, 2));
+            console.log(
+                'Parsed ticket data:',
+                JSON.stringify(ticketData, null, 2),
+            );
             // Check if ticketData has the expected structure
             if (!ticketData || !ticketData.header || !ticketData.header.id) {
                 console.error('Ticket data is missing expected properties');
                 throw new Error('Invalid ticket data structure');
             }
-            
+
             const cred = errors.unwrap(
                 credential.Credential.create(
                     {
@@ -369,39 +422,39 @@ const EventDetailPage: React.FC = () => {
                 ),
             );
             console.log('Credential object created successfully:', cred);
-    
+
             cred.attachments['chain_id'] = event?.chainId || '0';
             cred.attachments['context_id'] = event?.contextId || 'unknown';
             cred.attachments['issuer_key_id'] = event?.issuerKeyId || 'unknown';
-    
+
             const dummyIssuerEvmAddr =
                 '0x15f4a32c40152a0f48E61B7aed455702D1Ea725e';
             const dummyKey = utils.decodeFromHex(
-                '0xfd60ceb442aca7f74d2e56c1f0e93507798e8a6e02c4cd1a5585a36167fa7b03'
+                '0xfd60ceb442aca7f74d2e56c1f0e93507798e8a6e02c4cd1a5585a36167fa7b03',
             );
             const myIssuer = new issuer.BabyzkIssuer(
                 dummyKey,
                 BigInt(dummyIssuerEvmAddr),
-                BigInt(1)
+                BigInt(1),
             ); // mainnet
             myIssuer.sign(cred, {
                 sigID: BigInt(100),
                 expiredAt: BigInt(
-                    Math.ceil(new Date().getTime() / 1000) + 7 * 24 * 60 * 60
+                    Math.ceil(new Date().getTime() / 1000) + 7 * 24 * 60 * 60,
                 ),
                 identityCommitment: identityCommitment,
             });
             console.log('Signature added to the credential');
-    
+
             const externalNullifier =
                 utils.computeExternalNullifier(contextString);
             const expiredAtLowerBound = BigInt(
-                Math.ceil(new Date().getTime() / 1000) + 3 * 24 * 60 * 60
+                Math.ceil(new Date().getTime() / 1000) + 3 * 24 * 60 * 60,
             );
             const equalCheckId = BigInt(0);
             const pseudonym = BigInt('0xdeadbeef');
             console.log('Proof generation parameters set up successfully.');
-    
+
             console.log('Downloading proof generation gadgets...');
             const proofGenGadgets =
                 await user.User.fetchProofGenGadgetsByTypeID(
@@ -409,7 +462,7 @@ const EventDetailPage: React.FC = () => {
                     provider,
                 );
             console.log('Proof generation gadgets downloaded successfully.');
-    
+
             const proof = await u.genBabyzkProofWithQuery(
                 identityCommitment,
                 cred,
@@ -427,17 +480,17 @@ const EventDetailPage: React.FC = () => {
                 `,
             );
             console.log('Proof generated successfully.');
-    
+
             console.log('Generating proof with the following parameters:');
             console.log('Type ID:', cred.header.type.toString());
             console.log('Context ID:', contextID.toString());
             console.log('Context String:', contextString);
             console.log('Issuer ID:', BigInt(dummyIssuerEvmAddr).toString());
-    
+
             console.log('Proof:', proof);
             const proofString = JSON.stringify(proof);
             console.log('Proof converted to string successfully:', proofString);
-    
+
             return proofString;
         } catch (error) {
             console.error('Error generating proof:', error);
@@ -447,10 +500,46 @@ const EventDetailPage: React.FC = () => {
             }
             throw error;
         }
-    };    
+    };
 
     const handleHostCheckIn = () => {
         router.push(`/events/${eventId}/checkin`);
+    };
+
+    const formatDescription = (description: string) => {
+        // Split the description into lines, preserving original line breaks
+        const lines = description.split('\n');
+
+        return lines.map((line, index) => {
+            // Trim each line to remove any leading/trailing whitespace
+            const trimmedLine = line.trim();
+            if (trimmedLine === 'Schedule:') {
+                // Make "Schedule:" bold
+                return (
+                    <React.Fragment key={index}>
+                        <strong>{trimmedLine}</strong>
+                        <br />
+                    </React.Fragment>
+                );
+            } else if (/^\d{1,2}:\d{2}\s?[AP]M/.test(trimmedLine)) {
+                // Make time entries bold
+                const [time, ...rest] = trimmedLine.split(' - ');
+                return (
+                    <React.Fragment key={index}>
+                        <strong>{time}</strong> - {rest.join(' - ')}
+                        <br />
+                    </React.Fragment>
+                );
+            } else {
+                // Regular line
+                return (
+                    <React.Fragment key={index}>
+                        {trimmedLine}
+                        <br />
+                    </React.Fragment>
+                );
+            }
+        });
     };
 
     if (isLoading) return <div>Loading...</div>;
@@ -492,12 +581,31 @@ const EventDetailPage: React.FC = () => {
                             </HostCheckInButton>
                         </EventHeader>
                         <Separator />
-                        <EventDate>
-                            Start: July 8, 2024 - End: July 11, 2024
-                        </EventDate>
-                        <EventLink href="#">Event Link</EventLink>
+                        <EventInfoRow>
+                            <EventDate>
+                                Start: July 8, 2024 - End: July 11, 2024
+                            </EventDate>
+                            <EventLinkContainer>
+                                <EventLink
+                                    href={event?.url || '#'}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    Event Details
+                                    <ExternalLinkIcon>
+                                        <Image
+                                            src="/link-icon.svg"
+                                            alt="External Link"
+                                            width={14}
+                                            height={14}
+                                            style={{ color: 'inherit' }}
+                                        />
+                                    </ExternalLinkIcon>
+                                </EventLink>
+                            </EventLinkContainer>
+                        </EventInfoRow>
                         <EventDescription expanded={isDescriptionExpanded}>
-                            {event?.description}
+                            {formatDescription(event?.description || '')}
                         </EventDescription>
                         <ExpandButton
                             onClick={() =>
@@ -507,56 +615,75 @@ const EventDetailPage: React.FC = () => {
                             {isDescriptionExpanded ? 'Show less' : 'Show more'}
                         </ExpandButton>
                         {!hasTicket ? (
-    <RequestCredentialButton 
-        onClick={handleRequestCredential}
-        disabled={isRequestingCredential}
-    >
-        {isRequestingCredential ? (
-            <LoadingContent>
-                <LoadingSpinner />
-                <span>Requesting...</span>
-            </LoadingContent>
-        ) : (
-            'Request Credential'
-        )}
-    </RequestCredentialButton>
-) : (
-    <>
-        <CredentialObtainedMessage>
-            Ticket Credential Obtained 🎉
-        </CredentialObtainedMessage>
-        {!proofGenerated[eventId as string] ? (
-            <GenerateProofButton
-                onClick={handleGenerateProof}
-                disabled={isGeneratingProof[eventId as string]}
-            >
-                {isGeneratingProof[eventId as string] ? (
-                    <LoadingContent>
-                        <LoadingSpinner />
-                        <span>Generating...</span>
-                    </LoadingContent>
-                ) : (
-                    'Generate Proof'
-                )}
-            </GenerateProofButton>
-        ) : (
-            <>
-                <ProofMessage>
-                    Proof generated, show QR code below at gate to check in. 
-                    Screenshot the QR before the event as internet could be spotty!
-                </ProofMessage>
-                {qrCodeValue && (
-                    <QRCodeContainer>
-                        <QRCode
-                            value={qrCodeValue[eventId as string] || ''}
-                            size={256}
-                        />
-                    </QRCodeContainer>
-                )}
-            </>
-        )}
-    </>
-)}
+                            <RequestCredentialButton
+                                onClick={handleRequestCredential}
+                                disabled={isRequestingCredential}
+                            >
+                                {isRequestingCredential ? (
+                                    <LoadingContent>
+                                        <LoadingSpinner />
+                                        <span>Requesting...</span>
+                                    </LoadingContent>
+                                ) : (
+                                    'Request Credential'
+                                )}
+                            </RequestCredentialButton>
+                        ) : (
+                            <>
+                                <CredentialObtainedMessage>
+                                    Ticket Credential Obtained
+                                    <CelebrationIcon>
+                                        <Image
+                                            src="/confirm-icon.svg"
+                                            alt="Celebration"
+                                            width={24}
+                                            height={24}
+                                            style={{ color: 'inherit' }}
+                                        />
+                                    </CelebrationIcon>
+                                </CredentialObtainedMessage>
+                                {!proofGenerated[eventId as string] ? (
+                                    <GenerateProofButton
+                                        onClick={handleGenerateProof}
+                                        disabled={
+                                            isGeneratingProof[eventId as string]
+                                        }
+                                    >
+                                        {isGeneratingProof[
+                                            eventId as string
+                                        ] ? (
+                                            <LoadingContent>
+                                                <LoadingSpinner />
+                                                <span>Generating...</span>
+                                            </LoadingContent>
+                                        ) : (
+                                            'Generate Proof'
+                                        )}
+                                    </GenerateProofButton>
+                                ) : (
+                                    <>
+                                        <ProofMessage>
+                                            Proof generated, show QR code below
+                                            at gate to check in. Screenshot the
+                                            QR before the event as internet
+                                            could be spotty!
+                                        </ProofMessage>
+                                        {qrCodeValue && (
+                                            <QRCodeContainer>
+                                                <QRCode
+                                                    value={
+                                                        qrCodeValue[
+                                                            eventId as string
+                                                        ] || ''
+                                                    }
+                                                    size={400}
+                                                />
+                                            </QRCodeContainer>
+                                        )}
+                                    </>
+                                )}
+                            </>
+                        )}
                     </>
                 )}
             </EventDetailsContainer>
@@ -582,6 +709,56 @@ const MainContainer = styled.div`
     font-family: 'Inter', sans-serif;
     display: flex;
     flex-direction: column;
+`;
+
+const EventInfoRow = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+`;
+
+const EventDate = styled.p`
+    font-size: 12px;
+    color: #a3aab8;
+    font-weight: 600;
+    margin: 0;
+`;
+
+const EventLinkContainer = styled.div`
+    display: flex;
+    align-items: center;
+`;
+
+const EventLink = styled.a`
+    color: #5eb7ff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+`;
+
+const ExternalLinkIcon = styled.span`
+    display: inline-flex;
+    align-items: center;
+    margin-left: 5px;
+`;
+
+const CredentialObtainedMessage = styled.div`
+    font-size: 18px;
+    color: #000;
+    margin-bottom: 20px;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+`;
+
+const CelebrationIcon = styled.span`
+    margin-left: 8px;
+    display: inline-flex;
+    align-items: center;
 `;
 
 const ErrorBanner = styled.div`
@@ -672,30 +849,19 @@ const EventName = styled.h1`
     margin: 0;
 `;
 
-const EventDate = styled.p`
-    font-size: 12px;
-    color: #a3aab8;
-    margin-bottom: 10px;
-    font-weight: 600;
-`;
-
-const EventLink = styled.a`
-    color: #5eb7ff;
-    font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    display: block;
-    margin-bottom: 10px;
-`;
-
-const EventDescription = styled.p<{ expanded: boolean }>`
+const EventDescription = styled.div<{ expanded: boolean }>`
+    margin-bottom: auto;
     font-size: 16px;
     line-height: 1.5;
     color: rgba(100, 100, 100, 0.8);
-    margin-bottom: 20px;
-    max-height: ${(props) => (props.expanded ? 'none' : '100px')};
+    max-height: ${(props) => (props.expanded ? 'none' : '200px')};
     overflow: hidden;
     transition: max-height 0.3s ease;
+    white-space: pre-wrap; // Preserve line breaks and spaces
+
+    strong {
+        color: #000; // Make bold text darker for emphasis
+    }
 `;
 
 const HostCheckInButton = styled.button`
@@ -714,13 +880,13 @@ const RequestCredentialButton = styled.button`
     border: none;
     border-radius: 8px;
     color: white;
-    cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+    cursor: ${(props) => (props.disabled ? 'not-allowed' : 'pointer')};
     font-size: 16px;
     font-weight: 700;
     padding: 15px 32px;
     width: 100%;
     margin-top: 32px;
-    opacity: ${props => props.disabled ? 0.5 : 1};
+    opacity: ${(props) => (props.disabled ? 0.5 : 1)};
     transition: opacity 0.3s ease;
 `;
 
@@ -729,13 +895,6 @@ const Separator = styled.hr`
     height: 1px;
     background-color: #d4d4d4;
     margin: 10px 0;
-`;
-
-const CredentialObtainedMessage = styled.p`
-    font-size: 18px;
-    color: #000;
-    margin-bottom: 20px;
-    text-align: center;
 `;
 
 const GenerateProofButton = styled.button`
@@ -784,7 +943,6 @@ const LoadingSpinner = styled.div`
 const ProofMessage = styled.p`
     font-size: 16px;
     line-height: 1.5;
-    margin-bottom: 20px;
     color: rgba(144, 151, 166, 0.6);
     text-align: center;
 `;
@@ -792,7 +950,6 @@ const ProofMessage = styled.p`
 const QRCodeContainer = styled.div`
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
 `;
 
 const SVGIconSpace = styled.div`

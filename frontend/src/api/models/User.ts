@@ -51,6 +51,12 @@ export interface User {
     encryptedIdentitySecret?: string;
     /**
      *
+     * @type {boolean}
+     * @memberof User
+     */
+    isEncrypted?: boolean;
+    /**
+     *
      * @type {Date}
      * @memberof User
      */
@@ -90,6 +96,8 @@ export function UserFromJSONTyped(
             json['encrypted_identity_secret'] == null
                 ? undefined
                 : json['encrypted_identity_secret'],
+        isEncrypted:
+            json['is_encrypted'] == null ? undefined : json['is_encrypted'],
         createdAt:
             json['created_at'] == null
                 ? undefined
@@ -107,6 +115,7 @@ export function UserToJSON(value?: User | null): any {
         identity_commitment: value['identityCommitment'],
         encrypted_internal_nullifier: value['encryptedInternalNullifier'],
         encrypted_identity_secret: value['encryptedIdentitySecret'],
+        is_encrypted: value['isEncrypted'],
         created_at:
             value['createdAt'] == null
                 ? undefined

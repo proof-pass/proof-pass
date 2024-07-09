@@ -6,21 +6,30 @@ import withAuth from '@/components/withAuth';
 import { DefaultApi, Configuration, FetchAPI, TicketCredential } from '@/api';
 import { getToken } from '@/utils/auth';
 import { decryptValue } from '@/utils/utils';
-import JsonDisplay from '@/components/JsonDisplay'; 
+import JsonDisplay from '@/components/JsonDisplay';
 
 const CredentialsPage: React.FC = () => {
     const router = useRouter();
-    const [ticketCredentials, setTicketCredentials] = useState<TicketCredential[]>([]);
+    const [ticketCredentials, setTicketCredentials] = useState<
+        TicketCredential[]
+    >([]);
     const [eventNames, setEventNames] = useState<Record<string, string>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [displayedCredentials, setDisplayedCredentials] = useState<Record<string, Record<string, unknown> | null>>({});
+    const [displayedCredentials, setDisplayedCredentials] = useState<
+        Record<string, Record<string, unknown> | null>
+    >({});
     const api = useMemo(() => {
         const token = getToken();
-        const customFetch: FetchAPI = async (input: RequestInfo, init?: RequestInit) => {
+        const customFetch: FetchAPI = async (
+            input: RequestInfo,
+            init?: RequestInit,
+        ) => {
             if (!init) init = {};
             if (!init.headers) init.headers = {};
-            if (token) (init.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+            if (token)
+                (init.headers as Record<string, string>)['Authorization'] =
+                    `Bearer ${token}`;
             return fetch(input, init);
         };
 
@@ -40,20 +49,28 @@ const CredentialsPage: React.FC = () => {
                 const credentials = await api.userMeTicketCredentialsGet();
                 setTicketCredentials(credentials);
 
-                const uniqueEventIds = Array.from(new Set(credentials.map((cred) => cred.eventId).filter(Boolean)));
+                const uniqueEventIds = Array.from(
+                    new Set(
+                        credentials.map((cred) => cred.eventId).filter(Boolean),
+                    ),
+                );
                 const names: Record<string, string> = {};
                 await Promise.all(
                     uniqueEventIds.map(async (eventId) => {
                         if (eventId) {
-                            const event = await api.eventsEventIdGet({ eventId });
+                            const event = await api.eventsEventIdGet({
+                                eventId,
+                            });
                             names[eventId] = event.name ?? 'Unknown Event';
                         }
-                    })
+                    }),
                 );
                 setEventNames(names);
             } catch (error) {
                 console.error('Error fetching ticket credentials:', error);
-                setError('Failed to fetch ticket credentials. Please try again later.');
+                setError(
+                    'Failed to fetch ticket credentials. Please try again later.',
+                );
             } finally {
                 setIsLoading(false);
             }
@@ -78,8 +95,13 @@ const CredentialsPage: React.FC = () => {
                     [eventId]: finalData,
                 }));
             } catch (error) {
-                console.error('Error decrypting or parsing ticket data:', error);
-                setError('Failed to display ticket credential. Please try again.');
+                console.error(
+                    'Error decrypting or parsing ticket data:',
+                    error,
+                );
+                setError(
+                    'Failed to display ticket credential. Please try again.',
+                );
                 setDisplayedCredentials((prev) => ({
                     ...prev,
                     [eventId]: null,
@@ -94,14 +116,24 @@ const CredentialsPage: React.FC = () => {
         }
     };
 
-      return (
+    return (
         <PageContainer>
             <Header>
                 <PlanetOverlay>
-                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
+                    <Image
+                        src="/planet.svg"
+                        alt="Planet"
+                        width={200}
+                        height={200}
+                    />
                 </PlanetOverlay>
                 <GoBackButton onClick={() => router.push('/dashboard')}>
-                    <Image src="/left-arrow.svg" alt="go back" width={20} height={20} />
+                    <Image
+                        src="/left-arrow.svg"
+                        alt="go back"
+                        width={20}
+                        height={20}
+                    />
                     <span>Homepage</span>
                 </GoBackButton>
             </Header>
@@ -116,29 +148,62 @@ const CredentialsPage: React.FC = () => {
                         {ticketCredentials.length > 0 ? (
                             ticketCredentials.map((ticket, index) => (
                                 <CredentialItem key={index}>
-                                    <p>Event: {eventNames[ticket.eventId ?? ''] ?? 'Unknown Event'}</p>
-                                    <p>Issued At: {new Date(ticket.issuedAt ?? '').toLocaleString()}</p>
-                                    <p>Expires At: {new Date(ticket.expireAt ?? '').toLocaleString()}</p>
-                                    <DisplayCredentialButton onClick={() => handleDisplayCredential(ticket)}>
+                                    <p>
+                                        Event:{' '}
+                                        {eventNames[ticket.eventId ?? ''] ??
+                                            'Unknown Event'}
+                                    </p>
+                                    <p>
+                                        Issued At:{' '}
+                                        {new Date(
+                                            ticket.issuedAt ?? '',
+                                        ).toLocaleString()}
+                                    </p>
+                                    <p>
+                                        Expires At:{' '}
+                                        {new Date(
+                                            ticket.expireAt ?? '',
+                                        ).toLocaleString()}
+                                    </p>
+                                    <DisplayCredentialButton
+                                        onClick={() =>
+                                            handleDisplayCredential(ticket)
+                                        }
+                                    >
                                         Display Credential
                                     </DisplayCredentialButton>
-                                    {displayedCredentials[ticket.eventId || 'unknown'] !== undefined && (
+                                    {displayedCredentials[
+                                        ticket.eventId || 'unknown'
+                                    ] !== undefined && (
                                         <CredentialDisplay>
-                                            <JsonDisplay data={displayedCredentials[ticket.eventId || 'unknown']} />
+                                            <JsonDisplay
+                                                data={
+                                                    displayedCredentials[
+                                                        ticket.eventId ||
+                                                            'unknown'
+                                                    ]
+                                                }
+                                            />
                                         </CredentialDisplay>
                                     )}
                                 </CredentialItem>
                             ))
                         ) : (
                             <NoCredentialText>
-                                No ticket credentials found. Please go to the Events page to request a ticket credential.
+                                No ticket credentials found. Please go to the
+                                Events page to request a ticket credential.
                             </NoCredentialText>
                         )}
                     </CredentialSection>
                 )}
             </MainContainer>
             <Footer>
-                <Image src="/proof-summer-icon.svg" alt="Proof Summer" width={187} height={104} />
+                <Image
+                    src="/proof-summer-icon.svg"
+                    alt="Proof Summer"
+                    width={187}
+                    height={104}
+                />
             </Footer>
         </PageContainer>
     );
@@ -258,7 +323,7 @@ const ErrorMessage = styled.div`
 `;
 
 const DisplayCredentialButton = styled.button`
-    background-color: #5EB7FF;
+    background-color: #5eb7ff;
     color: white;
     border: none;
     border-radius: 8px;

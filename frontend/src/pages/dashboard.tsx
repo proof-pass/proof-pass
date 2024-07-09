@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { IndexMenuItemsProps } from '@/types/indexMenuItemsProps';
 import withAuth from '@/components/withAuth';
 import Image from 'next/image';
+import Head from 'next/head';
 
 const menuData = [
     { label: 'About' },
@@ -42,50 +43,59 @@ const DashboardPage: React.FC = () => {
     };
 
     return (
-        <DashboardContainer>
-            <Header>
-                <PlanetOverlay>
-                    <Image
-                        src="/planet.svg"
-                        alt="Planet"
-                        width={200}
-                        height={200}
-                    />
-                </PlanetOverlay>
-                <Nav>
-                    {menuData.map((item, index) => (
-                        <MenuItem
-                            key={index}
-                            label={item.label}
-                            onClick={() => handleMenuItemClick(item.label)}
-                        />
-                    ))}
-                </Nav>
-            </Header>
-            <Content>{/* Placeholder for future development */}</Content>
-            <Footer>
-                <Image
-                    src="/proof-summer-icon.svg"
-                    alt="Proof Summer"
-                    width={187}
-                    height={104}
+        <>
+            <Head>
+                <meta
+                    name="viewport"
+                    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
                 />
-            </Footer>
-            {activeOverlay && (
-                <OverlayContainer>
-                    {activeOverlay === 'About' && (
-                        <AboutOverlay onClose={handleCloseOverlay} />
-                    )}
-                    {activeOverlay === 'Profile' && (
-                        <ProfileOverlay
-                            onClose={handleCloseOverlay}
-                            onLogout={handleLogout}
-                            logoutButtonLabel="Logout"
+                <title>Dashboard - Proof Pass</title>
+            </Head>
+            <DashboardContainer>
+                <Header>
+                    <PlanetOverlay>
+                        <Image
+                            src="/planet.svg"
+                            alt="Planet"
+                            width={200}
+                            height={200}
                         />
-                    )}
-                </OverlayContainer>
-            )}
-        </DashboardContainer>
+                    </PlanetOverlay>
+                    <Nav>
+                        {menuData.map((item, index) => (
+                            <MenuItem
+                                key={index}
+                                label={item.label}
+                                onClick={() => handleMenuItemClick(item.label)}
+                            />
+                        ))}
+                    </Nav>
+                </Header>
+                <Content>{/* Placeholder for future development */}</Content>
+                <Footer>
+                    <Image
+                        src="/proof-summer-icon.svg"
+                        alt="Proof Summer"
+                        width={187}
+                        height={104}
+                    />
+                </Footer>
+                {activeOverlay && (
+                    <OverlayContainer>
+                        {activeOverlay === 'About' && (
+                            <AboutOverlay onClose={handleCloseOverlay} />
+                        )}
+                        {activeOverlay === 'Profile' && (
+                            <ProfileOverlay
+                                onClose={handleCloseOverlay}
+                                onLogout={handleLogout}
+                                logoutButtonLabel="Logout"
+                            />
+                        )}
+                    </OverlayContainer>
+                )}
+            </DashboardContainer>
+        </>
     );
 };
 
@@ -97,7 +107,7 @@ const DashboardContainer = styled.div`
     background-color: #fff;
     color: #000;
     max-width: 480px;
-    min-height: 100vh;
+    height: 100vh;
     margin: 0 auto;
     padding: 0;
     font-family: 'Inter', sans-serif;
@@ -107,7 +117,7 @@ const DashboardContainer = styled.div`
 
 const Header = styled.header`
     background-color: #ffd166;
-    padding: 20px;
+    padding: 2vh 20px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -169,13 +179,15 @@ const NavItem = styled.span`
 
 const Content = styled.main`
     flex-grow: 1;
-    padding: 20px;
+    padding: 3vh 20px;
+    display: flex;
+    flex-direction: column;
 `;
 
 const Footer = styled.footer`
     display: flex;
     justify-content: center;
-    padding: 20px;
+    padding: 2vh 20px;
 `;
 
 const OverlayContainer = styled.div`
