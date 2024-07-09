@@ -12,7 +12,7 @@ const EventsPage: React.FC = () => {
     const [eventList, setEventList] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+    
     const api = useMemo(() => {
         const token = getToken();
         const customFetch: FetchAPI = async (
@@ -120,16 +120,13 @@ const EventsPage: React.FC = () => {
                     eventList.map((event) => (
                         <EventCard
                             key={event.id}
-                            eventId={event.id ?? ''}
                             eventName={event.name ?? ''}
                             eventStartDate="July 8, 2024"
                             eventEndDate="July 11, 2024"
-                            eventUrl={event.url ?? '#'}
                             eventDescription={formatDescription(
-                                event.description ?? '',
+                                event.description ?? ''
                             )}
-                            onClick={() => handleEventClick(event.id ?? '')}
-                        />
+                            onClick={() => handleEventClick(event.id ?? '')} eventId={''} eventUrl={''}                        />
                     ))
                 ) : (
                     <NoEventsMessage>No events available.</NoEventsMessage>
