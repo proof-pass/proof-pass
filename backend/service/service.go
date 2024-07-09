@@ -69,7 +69,7 @@ func (s *APIService) EventsEventIdAttendancePost(ctx context.Context, eventId st
 	ctx = logger.WithContext(ctx)
 
 	credType := recordAttendanceRequest.Type
-	// credContext := recordAttendanceRequest.Context
+	credContext := recordAttendanceRequest.Context
 	nullifier := recordAttendanceRequest.Nullifier
 	// issuerKeyID := recordAttendanceRequest.KeyId
 	eventID := recordAttendanceRequest.EventId
@@ -97,7 +97,13 @@ func (s *APIService) EventsEventIdAttendancePost(ctx context.Context, eventId st
 		return openapi.Response(http.StatusBadRequest, errMsg), nil
 	}
 
-	// TODO: validate event context
+	// validate credential context
+	if credContext != event.ContextID {
+		errMsg := "Invalid credential context"
+		logger.Info().Msg(errMsg)
+		return openapi.Response(http.StatusBadRequest, errMsg), nil
+	}
+
 	// TODO: validate issuer
 
 	attendance, err := s.dbClient.Attendances.CreateOne(ctx, attendances.CreateOneParams{
@@ -390,7 +396,7 @@ func (s *APIService) UserUpdatePut(ctx context.Context, userUpdate openapi.UserU
 	encryptedInternalNullifier := userUpdate.EncryptedInternalNullifier
 	identityCommitment := userUpdate.IdentityCommitment
 	// TODO: validate input
-	// TODO: encrypted fields is b64 - start with 0x
+	// TODO encrypted fields is b64 - start with 0x
 
 	// get existing user info, fail update request if user already has these fields set
 	user, err := s.dbClient.Users.GetUserByID(ctx, userID)
@@ -545,7 +551,7 @@ func (s *APIService) UserMeRequestEmailCredentialPost(ctx context.Context) (open
 		},
 		ChainId:            uint64(s.issuerChainID),
 		IdentityCommitment: user.IdentityCommitment,
-		ExpiredAt:          fmt.Sprint(time.Now().Add(emailCredentialValidDuration).Unix()), // TODO
+		ExpiredAt:          fmt.Sprint(time.Now().Add(emailCredentialValidDuration).Unix()),
 	})
 	if err != nil {
 		logger.Err(err).Msg("Failed to generate email credential")

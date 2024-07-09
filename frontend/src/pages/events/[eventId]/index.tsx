@@ -419,7 +419,7 @@ const EventDetailPage: React.FC = () => {
 
             const externalNullifier =
                 utils.computeExternalNullifier(contextString);
-            const expiredAtLowerBound = BigInt(1);
+            const expiredAtLowerBound = BigInt(1720663600); // TODO: simon: set this to the event end time + 1 day
 
             const equalCheckId = BigInt(0);
             const pseudonym = BigInt(0);

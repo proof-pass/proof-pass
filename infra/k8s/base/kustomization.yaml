@@ -5,10 +5,13 @@ resources:
   - namespace.yaml
   - backend.yaml
   - backend_cm.yaml
+  - backend_hpa.yaml
   - frontend.yaml
   - frontend_cm.yaml
+  - frontend_hpa.yaml
   - issuer.yaml
   - issuer_cm.yaml
+  - issuer_hpa.yaml
   - postgres.yaml
   - postgres_cm.yaml
   - redis.yaml
