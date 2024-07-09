@@ -30,12 +30,6 @@ interface ScannerError extends Error {
 const CheckInPage: React.FC = () => {
     const router = useRouter();
     const { eventId } = router.query;
-    const [verified, setVerified] = useState<boolean | null>(null);
-    const [error, setError] = useState<string | null>(null);
-    const [hasAttendedBefore, setHasAttendedBefore] = useState<boolean>(false);
-    const [contextMismatchError, setContextMismatchError] = useState<
-        string | null
-    >(null);
     const [adminCode, setAdminCode] = useState('');
     const [isHostLoggedIn, setIsHostLoggedIn] = useState(false);
     const [eventName, setEventName] = useState<string>('');
@@ -64,7 +58,6 @@ const CheckInPage: React.FC = () => {
         async (code: string) => {
             if (event && code) {
                 setIsHostLoggedIn(true);
-                setError(null);
             }
         },
         [event],
@@ -79,14 +72,16 @@ const CheckInPage: React.FC = () => {
     ) => {
         event?.preventDefault();
         if (!adminCode) {
-            setError('Please enter an admin code');
+            setPopupMessage('Please enter an admin code');
+            setPopupSuccess(false);
+            setShowPopup(true);
             return;
         }
         await autoLogin(adminCode);
     };
 
     const verifyProof = useCallback(
-        async (proof: babyzkTypes.WholeProof): Promise<boolean> => {
+        async (proof: babyzkTypes.WholeProof): Promise<true | string> => {
             try {
                 const provider = new ethers.JsonRpcProvider(
                     'https://cloudflare-eth.com',
@@ -114,25 +109,11 @@ const CheckInPage: React.FC = () => {
                 );
 
                 if (actualContextID === undefined) {
-                    console.error('Context ID not found in the proof');
-                    setError('Invalid proof: Context ID not found');
-                    return false;
+                    return 'Invalid proof: Context ID not found';
                 }
 
                 if (actualContextID !== expectedContextID) {
-                    console.error('Context ID mismatch');
-                    console.log(
-                        'Expected Context ID:',
-                        expectedContextID.toString(),
-                    );
-                    console.log(
-                        'Actual Context ID:',
-                        actualContextID.toString(),
-                    );
-                    setContextMismatchError(
-                        'This ticket is for a different event. Please check and try again.',
-                    );
-                    return false;
+                    return 'This ticket is for a different event. Please check and try again.';
                 }
 
                 if (actualKeyId !== undefined) {
@@ -151,14 +132,13 @@ const CheckInPage: React.FC = () => {
                     evm.verifyResultToString(result),
                 );
 
-                return result === evm.VerifyResult.OK;
+                return result === evm.VerifyResult.OK ? true : 'Verification failed';
             } catch (error) {
                 console.error('Error in verifyProof:', error);
-                setError('Failed to verify the proof. Please try again.');
-                return false;
+                return 'Failed to verify the proof. Please try again.';
             }
         },
-        [eventId, setError, setContextMismatchError],
+        [eventId],
     );
 
     const recordAttendance = useCallback(
@@ -166,10 +146,8 @@ const CheckInPage: React.FC = () => {
             eventId: string,
             proof: babyzkTypes.WholeProof,
             adminCode: string,
-        ) => {
+        ): Promise<true | string> => {
             try {
-                setError(null);
-                setHasAttendedBefore(false);
                 const publicSignals = babyzk.defaultPublicSignalGetter;
 
                 const token = getToken();
@@ -209,54 +187,29 @@ const CheckInPage: React.FC = () => {
                 });
 
                 console.log('Attendance recorded successfully');
-                setVerified(true);
-                setIsHostLoggedIn(true);
+                return true;
             } catch (error: unknown) {
                 console.error('Error recording attendance:', error);
-                setVerified(false);
-
                 if (error instanceof Error) {
                     const scannerError = error as ScannerError;
                     switch (scannerError.status) {
                         case 401:
-                            setError(
-                                'Invalid admin code. Please enter the correct code.',
-                            );
-                            setAdminCode('');
-                            setIsHostLoggedIn(false);
-                            break;
+                            return 'Invalid admin code. Please enter the correct code.';
                         case 404:
-                            setError(
-                                'Event not found. Please check the event details and try again.',
-                            );
-                            break;
+                            return 'Event not found. Please check the event details and try again.';
                         case 400:
-                            setError(
-                                'Invalid credential type. Please check your ticket and try again.',
-                            );
-                            break;
+                            return 'Invalid credential type. Please check your ticket and try again.';
                         case 409:
-                            setHasAttendedBefore(true);
-                            setVerified(true);
-                            break;
+                            return 'Attendance was previously recorded for this event.';
                         default:
-                            setError(
-                                scannerError.body?.message ||
-                                    'Failed to record attendance. Please try again.',
-                            );
+                            return scannerError.body?.message || 'Failed to record attendance. Please try again.';
                     }
                 } else {
-                    setError('An unexpected error occurred. Please try again.');
+                    return 'An unexpected error occurred. Please try again.';
                 }
             }
         },
-        [
-            setError,
-            setHasAttendedBefore,
-            setVerified,
-            setIsHostLoggedIn,
-            setAdminCode,
-        ],
+        [],
     );
 
     const onScanSuccess = useCallback(
@@ -265,40 +218,31 @@ const CheckInPage: React.FC = () => {
     
             try {
                 await prepare();
-                setError(null);
-                setContextMismatchError(null);
                 const proof: babyzkTypes.WholeProof = JSON.parse(decodedText);
                 const verificationResult = await verifyProof(proof);
-                setVerified(verificationResult);
     
-                if (verificationResult) {
+                if (verificationResult === true) {
                     if (isHostLoggedIn) {
-                        await recordAttendance(event.id, proof, adminCode);
-                        setPopupMessage('Verified, attendance recorded!');
-                        setPopupSuccess(true);
+                        const attendanceResult = await recordAttendance(event.id, proof, adminCode);
+                        if (attendanceResult === true) {
+                            setPopupMessage('Verified, attendance recorded!');
+                            setPopupSuccess(true);
+                        } else {
+                            setPopupMessage(attendanceResult);
+                            setPopupSuccess(false);
+                        }
                     } else {
-                        setVerified(true);
                         setPopupMessage('Verified!');
                         setPopupSuccess(true);
                     }
                 } else {
-                    setPopupMessage('Verification failed. Please try again.');
+                    setPopupMessage(verificationResult);
                     setPopupSuccess(false);
                 }
                 setShowPopup(true);
             } catch (error: unknown) {
                 console.error('Error verifying proof:', error);
-                setVerified(false);
-    
-                if (error instanceof Error) {
-                    if (error.message.includes('Context ID mismatch')) {
-                        setPopupMessage('This ticket is for a different event. Please check and try again.');
-                    } else {
-                        setPopupMessage('Failed to verify the QR code. Please try again.');
-                    }
-                } else {
-                    setPopupMessage('An unexpected error occurred. Please try again.');
-                }
+                setPopupMessage('An unexpected error occurred. Please try again.');
                 setPopupSuccess(false);
                 setShowPopup(true);
             }
@@ -333,7 +277,6 @@ const CheckInPage: React.FC = () => {
                 });
                 setEvent(eventDetails as EventDetails);
                 setEventName(eventDetails.name || 'Unknown Event');
-                setError(null);
                 setEventDetailsFetched(true);
 
                 if (urlAdminCode) {
@@ -343,7 +286,9 @@ const CheckInPage: React.FC = () => {
                 }
             } catch (error) {
                 console.error('Error fetching event details:', error);
-                setError('Failed to fetch event details');
+                setPopupMessage('Failed to fetch event details');
+                setPopupSuccess(false);
+                setShowPopup(true);
                 setEventName('Unknown Event');
             } finally {
                 setIsFetching(false);
@@ -439,34 +384,6 @@ const CheckInPage: React.FC = () => {
                 <ScannerWrapper>
                     <div id="reader"></div>
                 </ScannerWrapper>
-                {error && (
-                    <ErrorContainer>
-                        <ErrorText>{error}</ErrorText>
-                    </ErrorContainer>
-                )}
-                {contextMismatchError && (
-                    <ErrorContainer>
-                        <ErrorText>{contextMismatchError}</ErrorText>
-                    </ErrorContainer>
-                )}
-                {verified === true && (
-                    <SuccessContainer>
-                        {isHostLoggedIn ? (
-                            hasAttendedBefore ? (
-                                <WarningText>
-                                    Attendance was previously recorded for this
-                                    event.
-                                </WarningText>
-                            ) : (
-                                <SuccessText>
-                                    Verified, attendance recorded!
-                                </SuccessText>
-                            )
-                        ) : (
-                            <SuccessText>Verified!</SuccessText>
-                        )}
-                    </SuccessContainer>
-                )}
             </Card>
             <SVGIconSpace>
                 <Image
@@ -483,7 +400,7 @@ const CheckInPage: React.FC = () => {
                 </PopupText>
                 <PopupButton onClick={() => setShowPopup(false)}>Close</PopupButton>
             </Popup>
-        )}
+            )}
         </MainContainer>
     );
 };
@@ -699,38 +616,6 @@ const HostLoginButton = styled.button`
 const ScannerWrapper = styled.div`
     width: 100%;
     margin-bottom: 20px;
-`;
-
-const ErrorContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 20px;
-`;
-
-const ErrorText = styled.p`
-    color: #ff6b6b;
-    text-align: center;
-    font-weight: bold;
-`;
-
-const SuccessContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 20px;
-`;
-
-const SuccessText = styled.p`
-    color: #4ecdc4;
-    text-align: center;
-    font-weight: bold;
-`;
-
-const WarningText = styled.p`
-    color: #feca57;
-    text-align: center;
-    font-weight: bold;
 `;
 
 const SVGIconSpace = styled.div`
