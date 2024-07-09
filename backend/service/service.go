@@ -28,6 +28,8 @@ import (
 const (
 	emailSigninCodeCacheDurationSec = 60
 	unitCredentialTypeID            = 1
+	ticketCredentialValidDuration   = time.Hour * 24 * 265
+	emailCredentialValidDuration    = time.Hour * 24 * 14
 )
 
 type APIService struct {
@@ -212,8 +214,8 @@ func (s *APIService) EventsEventIdRequestTicketCredentialPost(ctx context.Contex
 			Attachments: map[string]string{"event_id": eventId},
 		},
 		ChainId:            uint64(s.issuerChainID),
-		IdentityCommitment: user.IdentityCommitment,                                 // ticket credential is issued to the email
-		ExpiredAt:          fmt.Sprint(time.Now().Add(time.Hour * 24 * 265).Unix()), // one year
+		IdentityCommitment: user.IdentityCommitment,                                          // ticket credential is issued to the email
+		ExpiredAt:          fmt.Sprint(time.Now().Add(ticketCredentialValidDuration).Unix()), // one year
 	})
 	if err != nil {
 		logger.Err(err).Msg("Failed to generate ticket credential")
@@ -225,7 +227,7 @@ func (s *APIService) EventsEventIdRequestTicketCredentialPost(ctx context.Contex
 		EventId:    eventId,
 		Credential: resp.GetSignedCred(),
 		IssuedAt:   time.Now(),
-		ExpireAt:   time.Now().Add(time.Hour * 24),
+		ExpireAt:   time.Now().Add(ticketCredentialValidDuration),
 	}), nil
 }
 
@@ -544,7 +546,7 @@ func (s *APIService) UserMeRequestEmailCredentialPost(ctx context.Context) (open
 		},
 		ChainId:            uint64(s.issuerChainID),
 		IdentityCommitment: identityCommitment,
-		ExpiredAt:          fmt.Sprint(time.Now().Add(time.Hour * 24).Unix()), // TODO
+		ExpiredAt:          fmt.Sprint(time.Now().Add(emailCredentialValidDuration).Unix()), // TODO
 	})
 	if err != nil {
 		logger.Err(err).Msg("Failed to generate email credential")
@@ -555,7 +557,7 @@ func (s *APIService) UserMeRequestEmailCredentialPost(ctx context.Context) (open
 	return openapi.Response(http.StatusCreated, openapi.UnencryptedEmailCredential{
 		Credential: resp.GetSignedCred(),
 		IssuedAt:   time.Now(),
-		ExpireAt:   time.Now().Add(time.Hour * 24 * 14),
+		ExpireAt:   time.Now().Add(emailCredentialValidDuration),
 	}), nil
 }
 

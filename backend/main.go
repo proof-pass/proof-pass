@@ -78,8 +78,8 @@ func main() {
 
 	// initialize API service
 	apiService := service.NewAPIService(
-		cfg.IssuerChainID,
 		cfg.EmailCredentialContextID,
+		cfg.IssuerChainID,
 		dbClient,
 		redisClient,
 		sesClient,
