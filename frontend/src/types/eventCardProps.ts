@@ -4,6 +4,6 @@ export interface EventCardProps {
     eventStartDate: string;
     eventEndDate: string;
     eventUrl: string;
-    eventDescription: string;
+    eventDescription: string | React.ReactNode;
     onClick: () => void;
 }

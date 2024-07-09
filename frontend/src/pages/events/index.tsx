@@ -55,6 +55,42 @@ const EventsPage: React.FC = () => {
         router.push(`/events/${eventId}`);
     };
 
+    const formatDescription = (description: string) => {
+        // Split the description into lines, preserving original line breaks
+        const lines = description.split('\n');
+
+        return lines.map((line, index) => {
+            // Trim each line to remove any leading/trailing whitespace
+            const trimmedLine = line.trim();
+            if (trimmedLine === 'Schedule:') {
+                // Make "Schedule:" bold
+                return (
+                    <React.Fragment key={index}>
+                        <strong>{trimmedLine}</strong>
+                        <br />
+                    </React.Fragment>
+                );
+            } else if (/^\d{1,2}:\d{2}\s?[AP]M/.test(trimmedLine)) {
+                // Make time entries bold
+                const [time, ...rest] = trimmedLine.split(' - ');
+                return (
+                    <React.Fragment key={index}>
+                        <strong>{time}</strong> - {rest.join(' - ')}
+                        <br />
+                    </React.Fragment>
+                );
+            } else {
+                // Regular line
+                return (
+                    <React.Fragment key={index}>
+                        {trimmedLine}
+                        <br />
+                    </React.Fragment>
+                );
+            }
+        });
+    };
+
     return (
         <MainContainer>
             <Header>
@@ -89,7 +125,9 @@ const EventsPage: React.FC = () => {
                             eventStartDate="July 8, 2024"
                             eventEndDate="July 11, 2024"
                             eventUrl={event.url ?? '#'}
-                            eventDescription={event.description ?? ''}
+                            eventDescription={formatDescription(
+                                event.description ?? '',
+                            )}
                             onClick={() => handleEventClick(event.id ?? '')}
                         />
                     ))

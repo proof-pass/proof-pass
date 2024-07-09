@@ -6,17 +6,30 @@ import { useRouter } from 'next/router';
 
 interface PasswordVerificationProps {
     encryptedInternalNullifier: string;
+    is_encrypted: boolean;
     onPasswordVerified: () => void;
 }
 
 const PasswordVerification: React.FC<PasswordVerificationProps> = ({
     encryptedInternalNullifier,
+    is_encrypted,
     onPasswordVerified,
 }) => {
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [password, setPassword] = useState('');
     const [message, setMessage] = useState('');
     const router = useRouter();
+
+    React.useEffect(() => {
+        if (!is_encrypted) {
+            setAuthPassword(hashPassword(''));
+            onPasswordVerified();
+        }
+    }, [is_encrypted, onPasswordVerified]);
+
+    if (!is_encrypted) {
+        return null;
+    }
 
     const togglePasswordVisibility = (e: React.MouseEvent) => {
         e.preventDefault();

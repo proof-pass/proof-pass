@@ -33,7 +33,9 @@ const CheckInPage: React.FC = () => {
     const [verified, setVerified] = useState<boolean | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [hasAttendedBefore, setHasAttendedBefore] = useState<boolean>(false);
-    const [contextMismatchError, setContextMismatchError] = useState<string | null>(null);
+    const [contextMismatchError, setContextMismatchError] = useState<
+        string | null
+    >(null);
     const [adminCode, setAdminCode] = useState('');
     const [isHostLoggedIn, setIsHostLoggedIn] = useState(false);
     const [eventName, setEventName] = useState<string>('');
@@ -55,18 +57,23 @@ const CheckInPage: React.FC = () => {
         );
     }, []);
 
-    const autoLogin = useCallback(async (code: string) => {
-        if (event && code) {
-            setIsHostLoggedIn(true);
-            setError(null);
-        }
-    }, [event]);
+    const autoLogin = useCallback(
+        async (code: string) => {
+            if (event && code) {
+                setIsHostLoggedIn(true);
+                setError(null);
+            }
+        },
+        [event],
+    );
 
     const onScanFailure = (error: string) => {
         console.warn(`Code scan error = ${error}`);
     };
 
-    const handleHostLogin = async (event?: React.MouseEvent<HTMLButtonElement>) => {
+    const handleHostLogin = async (
+        event?: React.MouseEvent<HTMLButtonElement>,
+    ) => {
         event?.preventDefault();
         if (!adminCode) {
             setError('Please enter an admin code');
@@ -75,167 +82,220 @@ const CheckInPage: React.FC = () => {
         await autoLogin(adminCode);
     };
 
-    const verifyProof = useCallback(async (proof: babyzkTypes.WholeProof): Promise<boolean> => {
-        try {
-            const provider = new ethers.JsonRpcProvider('https://cloudflare-eth.com');
-            const statefulVerifier = evm.v1.createBabyzkStatefulVerifier({
-                signerOrProvider: provider,
-            });
-
-            const expectedTypeID = credType.primitiveTypes.unit.type_id;
-            const expectedEventId = eventId as string;
-            const expectedContextID = credential.computeContextID(`Event Ticket: ${expectedEventId}`);
-            const expectedIssuerID = BigInt('0x15f4a32c40152a0f48E61B7aed455702D1Ea725e');
-
-            const actualContextID = babyzk.defaultPublicSignalGetter(
-                credential.IntrinsicPublicSignal.Context,
-                proof,
-            );
-            const actualKeyId = babyzk.defaultPublicSignalGetter(
-                credential.IntrinsicPublicSignal.KeyId,
-                proof,
-            );
-
-            if (actualContextID === undefined) {
-                console.error('Context ID not found in the proof');
-                setError('Invalid proof: Context ID not found');
-                return false;
-            }
-
-            if (actualContextID !== expectedContextID) {
-                console.error('Context ID mismatch');
-                console.log('Expected Context ID:', expectedContextID.toString());
-                console.log('Actual Context ID:', actualContextID.toString());
-                setContextMismatchError(
-                    'This ticket is for a different event. Please check and try again.',
+    const verifyProof = useCallback(
+        async (proof: babyzkTypes.WholeProof): Promise<boolean> => {
+            try {
+                const provider = new ethers.JsonRpcProvider(
+                    'https://cloudflare-eth.com',
                 );
+                const statefulVerifier = evm.v1.createBabyzkStatefulVerifier({
+                    signerOrProvider: provider,
+                });
+
+                const expectedTypeID = credType.primitiveTypes.unit.type_id;
+                const expectedEventId = eventId as string;
+                const expectedContextID = credential.computeContextID(
+                    `Event Ticket: ${expectedEventId}`,
+                );
+                const expectedIssuerID = BigInt(
+                    '0x15f4a32c40152a0f48E61B7aed455702D1Ea725e',
+                );
+
+                const actualContextID = babyzk.defaultPublicSignalGetter(
+                    credential.IntrinsicPublicSignal.Context,
+                    proof,
+                );
+                const actualKeyId = babyzk.defaultPublicSignalGetter(
+                    credential.IntrinsicPublicSignal.KeyId,
+                    proof,
+                );
+
+                if (actualContextID === undefined) {
+                    console.error('Context ID not found in the proof');
+                    setError('Invalid proof: Context ID not found');
+                    return false;
+                }
+
+                if (actualContextID !== expectedContextID) {
+                    console.error('Context ID mismatch');
+                    console.log(
+                        'Expected Context ID:',
+                        expectedContextID.toString(),
+                    );
+                    console.log(
+                        'Actual Context ID:',
+                        actualContextID.toString(),
+                    );
+                    setContextMismatchError(
+                        'This ticket is for a different event. Please check and try again.',
+                    );
+                    return false;
+                }
+
+                if (actualKeyId !== undefined) {
+                    console.log('Actual Key ID:', actualKeyId.toString());
+                }
+
+                const result = await statefulVerifier.verifyWholeProofFull(
+                    expectedTypeID,
+                    expectedContextID,
+                    expectedIssuerID,
+                    proof,
+                );
+
+                console.log(
+                    'Verification Result:',
+                    evm.verifyResultToString(result),
+                );
+
+                return result === evm.VerifyResult.OK;
+            } catch (error) {
+                console.error('Error in verifyProof:', error);
+                setError('Failed to verify the proof. Please try again.');
                 return false;
             }
+        },
+        [eventId, setError, setContextMismatchError],
+    );
 
-            if (actualKeyId !== undefined) {
-                console.log('Actual Key ID:', actualKeyId.toString());
-            }
+    const recordAttendance = useCallback(
+        async (
+            eventId: string,
+            proof: babyzkTypes.WholeProof,
+            adminCode: string,
+        ) => {
+            try {
+                setError(null);
+                setHasAttendedBefore(false);
+                const publicSignals = babyzk.defaultPublicSignalGetter;
 
-            const result = await statefulVerifier.verifyWholeProofFull(
-                expectedTypeID,
-                expectedContextID,
-                expectedIssuerID,
-                proof,
-            );
+                const token = getToken();
+                const headers: { [key: string]: string } = {
+                    'Content-Type': 'application/json',
+                };
 
-            console.log('Verification Result:', evm.verifyResultToString(result));
-
-            return result === evm.VerifyResult.OK;
-        } catch (error) {
-            console.error('Error in verifyProof:', error);
-            setError('Failed to verify the proof. Please try again.');
-            return false;
-        }
-    }, [eventId, setError, setContextMismatchError]);
-
-    const recordAttendance = useCallback(async (
-        eventId: string,
-        proof: babyzkTypes.WholeProof,
-        adminCode: string,
-    ) => {
-        try {
-            setError(null);
-            setHasAttendedBefore(false);
-            const publicSignals = babyzk.defaultPublicSignalGetter;
-
-            const token = getToken();
-            const headers: { [key: string]: string } = {
-                'Content-Type': 'application/json',
-            };
-
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
-
-            const apiConfig = new Configuration({ headers });
-            const authenticatedApi = new DefaultApi(apiConfig);
-
-            await authenticatedApi.eventsEventIdAttendancePost({
-                eventId,
-                recordAttendanceRequest: {
-                    type: credType.primitiveTypes.unit.type_id.toString(),
-                    context: publicSignals(credential.IntrinsicPublicSignal.Context, proof)?.toString() || '',
-                    nullifier: publicSignals(credential.IntrinsicPublicSignal.Nullifier, proof)?.toString() || '',
-                    keyId: publicSignals(credential.IntrinsicPublicSignal.KeyId, proof)?.toString() || '',
-                    eventId: eventId,
-                    adminCode: adminCode,
-                },
-            });
-
-            console.log('Attendance recorded successfully');
-            setVerified(true);
-            setIsHostLoggedIn(true);
-        } catch (error: unknown) {
-            console.error('Error recording attendance:', error);
-            setVerified(false);
-
-            if (error instanceof Error) {
-                const scannerError = error as ScannerError;
-                switch (scannerError.status) {
-                    case 401:
-                        setError('Invalid admin code. Please enter the correct code.');
-                        setAdminCode('');
-                        setIsHostLoggedIn(false);
-                        break;
-                    case 404:
-                        setError('Event not found. Please check the event details and try again.');
-                        break;
-                    case 400:
-                        setError('Invalid credential type. Please check your ticket and try again.');
-                        break;
-                    case 409:
-                        setHasAttendedBefore(true);
-                        setVerified(true);
-                        break;
-                    default:
-                        setError(scannerError.body?.message || 'Failed to record attendance. Please try again.');
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
                 }
-            } else {
-                setError('An unexpected error occurred. Please try again.');
-            }
-        }
-    }, [setError, setHasAttendedBefore, setVerified, setIsHostLoggedIn, setAdminCode]);
 
-    const onScanSuccess = useCallback(async (decodedText: string) => {
-        if (!event) return; 
-      
-        try {
-          await prepare();
-          setError(null);
-          setContextMismatchError(null);
-          const proof: babyzkTypes.WholeProof = JSON.parse(decodedText);
-          const verificationResult = await verifyProof(proof);
-          setVerified(verificationResult);
-      
-          if (verificationResult) {
-            if (isHostLoggedIn) {
-              await recordAttendance(event.id, proof, adminCode);
-            } else {
-              setVerified(true);
+                const apiConfig = new Configuration({ headers });
+                const authenticatedApi = new DefaultApi(apiConfig);
+
+                await authenticatedApi.eventsEventIdAttendancePost({
+                    eventId,
+                    recordAttendanceRequest: {
+                        type: credType.primitiveTypes.unit.type_id.toString(),
+                        context:
+                            publicSignals(
+                                credential.IntrinsicPublicSignal.Context,
+                                proof,
+                            )?.toString() || '',
+                        nullifier:
+                            publicSignals(
+                                credential.IntrinsicPublicSignal.Nullifier,
+                                proof,
+                            )?.toString() || '',
+                        keyId:
+                            publicSignals(
+                                credential.IntrinsicPublicSignal.KeyId,
+                                proof,
+                            )?.toString() || '',
+                        eventId: eventId,
+                        adminCode: adminCode,
+                    },
+                });
+
+                console.log('Attendance recorded successfully');
+                setVerified(true);
+                setIsHostLoggedIn(true);
+            } catch (error: unknown) {
+                console.error('Error recording attendance:', error);
+                setVerified(false);
+
+                if (error instanceof Error) {
+                    const scannerError = error as ScannerError;
+                    switch (scannerError.status) {
+                        case 401:
+                            setError(
+                                'Invalid admin code. Please enter the correct code.',
+                            );
+                            setAdminCode('');
+                            setIsHostLoggedIn(false);
+                            break;
+                        case 404:
+                            setError(
+                                'Event not found. Please check the event details and try again.',
+                            );
+                            break;
+                        case 400:
+                            setError(
+                                'Invalid credential type. Please check your ticket and try again.',
+                            );
+                            break;
+                        case 409:
+                            setHasAttendedBefore(true);
+                            setVerified(true);
+                            break;
+                        default:
+                            setError(
+                                scannerError.body?.message ||
+                                    'Failed to record attendance. Please try again.',
+                            );
+                    }
+                } else {
+                    setError('An unexpected error occurred. Please try again.');
+                }
             }
-          }
-        } catch (error: unknown) {
-          console.error('Error verifying proof:', error);
-          setVerified(false);
-      
-          if (error instanceof Error) {
-            if (error.message.includes('Context ID mismatch')) {
-              setContextMismatchError(
-                'This ticket is for a different event. Please check and try again.'
-              );
-            } else {
-              setError('Failed to verify the QR code. Please try again.');
+        },
+        [
+            setError,
+            setHasAttendedBefore,
+            setVerified,
+            setIsHostLoggedIn,
+            setAdminCode,
+        ],
+    );
+
+    const onScanSuccess = useCallback(
+        async (decodedText: string) => {
+            if (!event) return;
+
+            try {
+                await prepare();
+                setError(null);
+                setContextMismatchError(null);
+                const proof: babyzkTypes.WholeProof = JSON.parse(decodedText);
+                const verificationResult = await verifyProof(proof);
+                setVerified(verificationResult);
+
+                if (verificationResult) {
+                    if (isHostLoggedIn) {
+                        await recordAttendance(event.id, proof, adminCode);
+                    } else {
+                        setVerified(true);
+                    }
+                }
+            } catch (error: unknown) {
+                console.error('Error verifying proof:', error);
+                setVerified(false);
+
+                if (error instanceof Error) {
+                    if (error.message.includes('Context ID mismatch')) {
+                        setContextMismatchError(
+                            'This ticket is for a different event. Please check and try again.',
+                        );
+                    } else {
+                        setError(
+                            'Failed to verify the QR code. Please try again.',
+                        );
+                    }
+                } else {
+                    setError('An unexpected error occurred. Please try again.');
+                }
             }
-          } else {
-            setError('An unexpected error occurred. Please try again.');
-          }
-        }
-      }, [event, isHostLoggedIn, adminCode, verifyProof, recordAttendance]);
+        },
+        [event, isHostLoggedIn, adminCode, verifyProof, recordAttendance],
+    );
 
     const handleGoBack = async () => {
         if (isQuickCheckIn) {
@@ -255,63 +315,69 @@ const CheckInPage: React.FC = () => {
 
     const fetchEventDetails = useCallback(async () => {
         const { eventId, 'admin-code': urlAdminCode } = router.query;
-        
+
         if (eventId && !isFetching && !eventDetailsFetched) {
-          setIsFetching(true);
-          try {
-            const eventDetails = await unauthenticatedApi.eventsEventIdGet({
-              eventId: eventId as string,
-            });
-            setEvent(eventDetails as EventDetails);
-            setEventName(eventDetails.name || 'Unknown Event');
-            setError(null);
-            setEventDetailsFetched(true);
-      
-            if (urlAdminCode) {
-              setIsQuickCheckIn(true);
-              setAdminCode(urlAdminCode as string);
-              await autoLogin(urlAdminCode as string);
+            setIsFetching(true);
+            try {
+                const eventDetails = await unauthenticatedApi.eventsEventIdGet({
+                    eventId: eventId as string,
+                });
+                setEvent(eventDetails as EventDetails);
+                setEventName(eventDetails.name || 'Unknown Event');
+                setError(null);
+                setEventDetailsFetched(true);
+
+                if (urlAdminCode) {
+                    setIsQuickCheckIn(true);
+                    setAdminCode(urlAdminCode as string);
+                    await autoLogin(urlAdminCode as string);
+                }
+            } catch (error) {
+                console.error('Error fetching event details:', error);
+                setError('Failed to fetch event details');
+                setEventName('Unknown Event');
+            } finally {
+                setIsFetching(false);
             }
-          } catch (error) {
-            console.error('Error fetching event details:', error);
-            setError('Failed to fetch event details');
-            setEventName('Unknown Event');
-          } finally {
-            setIsFetching(false);
-          }
         }
-      }, [router.query, unauthenticatedApi, autoLogin, eventDetailsFetched, isFetching]);
-      
-      useEffect(() => {
+    }, [
+        router.query,
+        unauthenticatedApi,
+        autoLogin,
+        eventDetailsFetched,
+        isFetching,
+    ]);
+
+    useEffect(() => {
         fetchEventDetails();
-      }, [fetchEventDetails]);
+    }, [fetchEventDetails]);
 
-      useEffect(() => {
+    useEffect(() => {
         if (typeof window !== 'undefined' && !scanner && eventDetailsFetched) {
-          const newScanner = new Html5QrcodeScanner(
-            "reader",
-            { 
-              fps: 5, 
-              qrbox: { width: 250, height: 250 },
-              aspectRatio: 1.0,
-            },
-            false
-          );
-          setScanner(newScanner);
+            const newScanner = new Html5QrcodeScanner(
+                'reader',
+                {
+                    fps: 5,
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: 1.0,
+                },
+                false,
+            );
+            setScanner(newScanner);
         }
-      
-        return () => {
-          if (scanner) {
-            scanner.clear().catch(console.error);
-          }
-        };
-      }, [scanner, eventDetailsFetched]);  
 
-      useEffect(() => {
+        return () => {
+            if (scanner) {
+                scanner.clear().catch(console.error);
+            }
+        };
+    }, [scanner, eventDetailsFetched]);
+
+    useEffect(() => {
         if (scanner) {
-          scanner.render(onScanSuccess, onScanFailure);
+            scanner.render(onScanSuccess, onScanFailure);
         }
-      }, [scanner, onScanSuccess]);
+    }, [scanner, onScanSuccess]);
 
     return (
         <MainContainer>
@@ -319,36 +385,51 @@ const CheckInPage: React.FC = () => {
             <Header>
                 {!isQuickCheckIn && (
                     <GoBackButton onClick={handleGoBack}>
-                        <Image src="/left-arrow.svg" alt="go back" width={20} height={20} />
+                        <Image
+                            src="/left-arrow.svg"
+                            alt="go back"
+                            width={20}
+                            height={20}
+                        />
                         <span>Event Details</span>
                     </GoBackButton>
                 )}
                 <PlanetOverlay>
-                    <Image src="/planet.svg" alt="Planet" width={200} height={200} />
+                    <Image
+                        src="/planet.svg"
+                        alt="Planet"
+                        width={200}
+                        height={200}
+                    />
                 </PlanetOverlay>
             </Header>
             {showLoginMessage && (
-                <LoginMessage>Please log in to view event details.</LoginMessage>
+                <LoginMessage>
+                    Please log in to view event details.
+                </LoginMessage>
             )}
             <Card>
-            <TitleContainer>
-          <TitleMain>Check in for: {eventName}</TitleMain>
-        </TitleContainer>
-        <AdminContainer>
-          <AdminCodeInput
-            type="text"
-            value={adminCode}
-            onChange={(e) => setAdminCode(e.target.value)}
-            placeholder="Enter admin code"
-            disabled={isHostLoggedIn}
-          />
-          <HostLoginButton onClick={handleHostLogin} disabled={isHostLoggedIn}>
-            {isHostLoggedIn ? 'Host Logged In' : 'Host Login'}
-          </HostLoginButton>
-        </AdminContainer>
-        <ScannerWrapper>
-          <div id="reader"></div>
-        </ScannerWrapper>
+                <TitleContainer>
+                    <TitleMain>Check in for: {eventName}</TitleMain>
+                </TitleContainer>
+                <AdminContainer>
+                    <AdminCodeInput
+                        type="text"
+                        value={adminCode}
+                        onChange={(e) => setAdminCode(e.target.value)}
+                        placeholder="Enter admin code"
+                        disabled={isHostLoggedIn}
+                    />
+                    <HostLoginButton
+                        onClick={handleHostLogin}
+                        disabled={isHostLoggedIn}
+                    >
+                        {isHostLoggedIn ? 'Host Logged In' : 'Host Login'}
+                    </HostLoginButton>
+                </AdminContainer>
+                <ScannerWrapper>
+                    <div id="reader"></div>
+                </ScannerWrapper>
                 {error && (
                     <ErrorContainer>
                         <ErrorText>{error}</ErrorText>
@@ -363,9 +444,14 @@ const CheckInPage: React.FC = () => {
                     <SuccessContainer>
                         {isHostLoggedIn ? (
                             hasAttendedBefore ? (
-                                <WarningText>Attendance was previously recorded for this event.</WarningText>
+                                <WarningText>
+                                    Attendance was previously recorded for this
+                                    event.
+                                </WarningText>
                             ) : (
-                                <SuccessText>Verified, attendance recorded!</SuccessText>
+                                <SuccessText>
+                                    Verified, attendance recorded!
+                                </SuccessText>
                             )
                         ) : (
                             <SuccessText>Verified!</SuccessText>
@@ -374,7 +460,12 @@ const CheckInPage: React.FC = () => {
                 )}
             </Card>
             <SVGIconSpace>
-                <Image src="/proof-summer-icon.svg" alt="proof-summer" width={187} height={104} />
+                <Image
+                    src="/proof-summer-icon.svg"
+                    alt="proof-summer"
+                    width={187}
+                    height={104}
+                />
             </SVGIconSpace>
         </MainContainer>
     );
@@ -466,10 +557,18 @@ const LoginMessage = styled.div`
     animation: fadeInOut 5s ease-in-out forwards;
 
     @keyframes fadeInOut {
-        0% { opacity: 0; }
-        10% { opacity: 1; }
-        90% { opacity: 1; }
-        100% { opacity: 0; }
+        0% {
+            opacity: 0;
+        }
+        10% {
+            opacity: 1;
+        }
+        90% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+        }
     }
 `;
 
@@ -548,8 +647,8 @@ const HostLoginButton = styled.button`
 `;
 
 const ScannerWrapper = styled.div`
-  width: 100%;
-  margin-bottom: 20px;
+    width: 100%;
+    margin-bottom: 20px;
 `;
 
 const ErrorContainer = styled.div`

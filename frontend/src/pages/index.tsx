@@ -4,6 +4,7 @@ import Image from 'next/image';
 import LoginForm from '../components/LoginForm';
 import PasswordVerification from '../components/PasswordVerification';
 import { useRouter } from 'next/router';
+import Head from 'next/head';
 
 const HomePage: React.FC = () => {
     const [showPasswordVerification, setShowPasswordVerification] =
@@ -23,54 +24,69 @@ const HomePage: React.FC = () => {
     };
 
     return (
-        <Container>
-            <Header>
-                <Title>Proof Pass</Title>
-            </Header>
-            <Card>
-                {showPasswordVerification ? (
-                    <PasswordVerification
-                        encryptedInternalNullifier={encryptedInternalNullifier}
-                        onPasswordVerified={handlePasswordVerified}
-                    />
-                ) : (
-                    <>
-                        <Instruction>
-                            Enter your email to log in or register
-                        </Instruction>
-                        <LoginForm
-                            onPasswordVerificationRequired={
-                                handlePasswordVerificationRequired
+        <>
+            <Head>
+                <meta
+                    name="viewport"
+                    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
+                />
+                <title>Proof Pass</title>
+            </Head>
+            <Container>
+                <Header>
+                    <Title>Proof Pass</Title>
+                </Header>
+                <Card>
+                    {showPasswordVerification ? (
+                        <PasswordVerification
+                            encryptedInternalNullifier={
+                                encryptedInternalNullifier
                             }
+                            onPasswordVerified={handlePasswordVerified}
+                            is_encrypted={false}
                         />
-                    </>
-                )}
-            </Card>
-            <LogoContainer>
-                <TopLogo>
-                    <Image
-                        src="/proof-summer-icon.svg"
-                        alt="Proof Summer"
-                        width={187}
-                        height={104}
-                    />
-                </TopLogo>
-                <BottomLogos>
-                    <Image
-                        src="/nebra-logo.svg"
-                        alt="Nebra"
-                        width={80}
-                        height={30}
-                    />
-                    <Image
-                        src="/galxe-logo.svg"
-                        alt="Galxe"
-                        width={80}
-                        height={30}
-                    />
-                </BottomLogos>
-            </LogoContainer>
-        </Container>
+                    ) : (
+                        <>
+                            <Instruction>
+                                Enter your email to log in or register
+                            </Instruction>
+                            <LoginForm
+                                onPasswordVerificationRequired={
+                                    handlePasswordVerificationRequired
+                                }
+                            />
+                        </>
+                    )}
+                </Card>
+                <LogoContainer>
+                    <TopLogo>
+                        <Image
+                            src="/proof-summer-icon.svg"
+                            alt="Proof Summer"
+                            width={187}
+                            height={104}
+                            style={{ width: '100%', height: 'auto' }}
+                        />
+                    </TopLogo>
+                    <BottomLogos>
+                        <Image
+                            src="/nebra-logo.svg"
+                            alt="Nebra"
+                            width={80}
+                            height={30}
+                            style={{ width: '80px', height: 'auto' }}
+                        />
+                        <Image
+                            src="/galxe-logo.svg"
+                            alt="Galxe"
+                            width={80}
+                            height={30}
+                            style={{ width: '80px', height: 'auto' }}
+                        />
+                    </BottomLogos>
+                </LogoContainer>
+            </Container>
+        </>
     );
 };
 
@@ -78,7 +94,7 @@ const Container = styled.main`
     background-color: #fff;
     color: #000;
     max-width: 480px;
-    min-height: 100vh;
+    height: 100vh;
     margin: 0 auto;
     padding: 0;
     font-family: 'Inter', sans-serif;
@@ -88,17 +104,27 @@ const Container = styled.main`
 
 const Header = styled.header`
     background-color: #ffd166;
-    padding: 20px;
+    padding: 3vh 20px; // Use viewport height for vertical padding
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
     width: 100%;
-    min-height: 100px;
+    height: 15vh; // Use viewport height instead of fixed height
     background-image: url('/planet-center.svg');
     background-size: cover;
     background-position: center;
+`;
+
+const Card = styled.div`
+    background-color: #fff;
+    color: #000;
+    padding: 24px;
+    width: 100%;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 `;
 
 const Title = styled.h1`
@@ -108,14 +134,6 @@ const Title = styled.h1`
     margin: 0;
     z-index: 2;
     position: relative;
-`;
-
-const Card = styled.div`
-    background-color: #fff;
-    color: #000;
-    padding: 24px;
-    width: 100%;
-    flex-grow: 1;
 `;
 
 const Instruction = styled.p`
@@ -130,18 +148,25 @@ const LogoContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-top: auto;
+    justify-content: flex-end;
     padding: 20px;
+    margin-top: auto;
 `;
 
 const TopLogo = styled.div`
     margin-bottom: 20px;
+    width: 187px;
+    height: auto;
 `;
 
 const BottomLogos = styled.div`
     display: flex;
     justify-content: center;
     gap: 40px;
+    img {
+        width: 80px;
+        height: auto;
+    }
 `;
 
 export default HomePage;
