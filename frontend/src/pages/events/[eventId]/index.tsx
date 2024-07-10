@@ -23,7 +23,7 @@ import {
     utils,
     issuer,
 } from '@galxe-identity-protocol/sdk';
-import { decryptValue, encryptValue } from '@/utils/utils';
+import { decryptValue, decryptValueUtf8, encryptValue } from '@/utils/utils';
 import { setToken } from '@/utils/auth';
 
 const EventDetailPage: React.FC = () => {
@@ -370,7 +370,7 @@ const EventDetailPage: React.FC = () => {
             console.log('Raw ticket data before decryption:', ticket.data);
 
             // Decrypt the ticket data
-            const decryptedTicketData = decryptValue(
+            const decryptedTicketData = decryptValueUtf8(
                 ticket.data,
                 hashedPassword,
             );

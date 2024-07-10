@@ -58,6 +58,30 @@ function encryptBigInt(value: bigint, hashedPassword: string): string {
     return `0x${Buffer.concat([iv, encrypted, authTag]).toString('hex')}`;
 }
 
+function decryptValueUtf8(
+    encryptedValue: string,
+    hashedPassword: string,
+): string {
+    const encryptedBuffer = Buffer.from(encryptedValue.slice(2), 'hex');
+    const iv = encryptedBuffer.slice(0, 12);
+    const encrypted = encryptedBuffer.slice(12, -16);
+    const authTag = encryptedBuffer.slice(-16);
+
+    const decipher = crypto.createDecipheriv(
+        'aes-256-gcm',
+        Buffer.from(hashedPassword.slice(2), 'hex'),
+        iv,
+    );
+    decipher.setAuthTag(authTag);
+
+    const decrypted = Buffer.concat([
+        decipher.update(encrypted),
+        decipher.final(),
+    ]);
+
+    return decrypted.toString('utf8');
+}
+
 function decryptValue(encryptedValue: string, hashedPassword: string): string {
     const encryptedBuffer = Buffer.from(encryptedValue.slice(2), 'hex');
     const iv = encryptedBuffer.slice(0, 12);
@@ -76,14 +100,7 @@ function decryptValue(encryptedValue: string, hashedPassword: string): string {
         decipher.final(),
     ]);
 
-    if (
-        decrypted.length === 32 &&
-        decrypted.every((byte) => byte >= 0 && byte <= 255)
-    ) {
-        return '0x' + decrypted.toString('hex');
-    } else {
-        return decrypted.toString('utf8');
-    }
+    return '0x' + decrypted.toString('hex');
 }
 
 // Main function to set up user credentials
@@ -125,6 +142,8 @@ export {
     hashPassword,
     generateRandomValue,
     encryptValue,
+    encryptBigInt,
+    decryptValueUtf8,
     decryptValue,
     setAuthPassword,
 };

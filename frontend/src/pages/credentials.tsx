@@ -5,7 +5,7 @@ import Image from 'next/image';
 import withAuth from '@/components/withAuth';
 import { DefaultApi, Configuration, FetchAPI, TicketCredential } from '@/api';
 import { getToken } from '@/utils/auth';
-import { decryptValue } from '@/utils/utils';
+import { decryptValueUtf8 } from '@/utils/utils';
 import JsonDisplay from '@/components/JsonDisplay';
 
 const CredentialsPage: React.FC = () => {
@@ -87,7 +87,7 @@ const CredentialsPage: React.FC = () => {
                 if (!hashedPassword) {
                     throw new Error('Authentication password not found');
                 }
-                const decryptedData = decryptValue(ticket.data, hashedPassword);
+                const decryptedData = decryptValueUtf8(ticket.data, hashedPassword);
                 const parsedData = JSON.parse(decryptedData);
                 const finalData = JSON.parse(parsedData);
                 setDisplayedCredentials((prev) => ({
