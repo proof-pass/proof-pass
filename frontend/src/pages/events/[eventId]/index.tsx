@@ -76,8 +76,12 @@ const EventDetailPage: React.FC = () => {
         async (jwt: string, proof: string) => {
             try {
                 if (jwt && proof) {
+                    jwt = Buffer.from(jwt, "base64").toString();
+                    console.log('Quick login with jwt:', jwt);
+
                     proof = Buffer.from(proof, "base64").toString();
                     console.log('Quick login with proof:', proof);
+                    
                     setToken(jwt);
 
                     // Parse the proof from the URL
