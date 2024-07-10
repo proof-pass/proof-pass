@@ -54,19 +54,23 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
 
     const handleToggleIdentitySecret = () => {
         const hashedPassword = localStorage.getItem('auth_password');
-        if (
-            hashedPassword &&
-            userDetails &&
-            userDetails.encryptedIdentitySecret
-        ) {
+        if (userDetails && userDetails.encryptedIdentitySecret) {
             if (showIdentitySecret) {
                 setShowIdentitySecret(false);
             } else {
-                const decryptedHex = decryptValue(
-                    userDetails.encryptedIdentitySecret,
-                    hashedPassword,
-                );
-                setDecryptedIdentitySecret(BigInt(decryptedHex).toString());
+                console.log(userDetails);
+                if (userDetails.isEncrypted === true) {
+                    const decryptedHex = decryptValue(
+                        userDetails.encryptedIdentitySecret,
+                        hashedPassword!,
+                    );
+                    setDecryptedIdentitySecret(BigInt(decryptedHex).toString());
+                } else {
+                    setDecryptedIdentitySecret(
+                        BigInt(userDetails.encryptedIdentitySecret).toString(),
+                    );
+                }
+
                 setShowIdentitySecret(true);
             }
         }
@@ -74,19 +78,23 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
 
     const handleToggleInternalNullifier = () => {
         const hashedPassword = localStorage.getItem('auth_password');
-        if (
-            hashedPassword &&
-            userDetails &&
-            userDetails.encryptedInternalNullifier
-        ) {
+        if (userDetails && userDetails.encryptedInternalNullifier) {
             if (showInternalNullifier) {
                 setShowInternalNullifier(false);
             } else {
-                const decryptedHex = decryptValue(
-                    userDetails.encryptedInternalNullifier,
-                    hashedPassword,
-                );
-                setDecryptedInternalNullifier(BigInt(decryptedHex).toString());
+                if (userDetails.isEncrypted === true) {
+                    const decryptedHex = decryptValue(
+                        userDetails.encryptedInternalNullifier,
+                        hashedPassword!,
+                    );
+                    setDecryptedInternalNullifier(
+                        BigInt(decryptedHex).toString(),
+                    );
+                } else {
+                    setDecryptedInternalNullifier(
+                        BigInt(userDetails.encryptedInternalNullifier).toString(),
+                    );
+                }
                 setShowInternalNullifier(true);
             }
         }

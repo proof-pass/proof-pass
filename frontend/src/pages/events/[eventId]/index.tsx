@@ -175,25 +175,35 @@ const EventDetailPage: React.FC = () => {
             );
 
             if (unencryptedTicket && unencryptedTicket.credential) {
-                // Encrypt the ticket credential
-                const hashedPassword = localStorage.getItem('auth_password');
-                if (!hashedPassword) {
-                    throw new Error('Authentication password not found');
-                }
+                await prepare();
 
-                const credentialString = JSON.stringify(
-                    unencryptedTicket.credential,
-                );
-                const encryptedData = encryptValue(
-                    credentialString,
-                    hashedPassword,
-                );
+                const userDetails = await api.userMeGet();
+
+                let encryptedCred = '';
+                if (userDetails.isEncrypted === true) {
+                    // Encrypt the ticket credential
+                    const hashedPassword =
+                        localStorage.getItem('auth_password');
+                    if (!hashedPassword) {
+                        throw new Error('Authentication password not found');
+                    }
+
+                    const credentialString = JSON.stringify(
+                        unencryptedTicket.credential,
+                    );
+                    encryptedCred = encryptValue(
+                        credentialString,
+                        hashedPassword,
+                    );
+                } else {
+                    encryptedCred = unencryptedTicket.credential;
+                }
 
                 // Store the encrypted ticket credential
                 await api.userMeTicketCredentialPut({
                     putTicketCredentialRequest: {
                         eventId: unencryptedTicket.eventId!,
-                        data: encryptedData,
+                        data: encryptedCred,
                         issuedAt: unencryptedTicket.issuedAt!,
                         expireAt: unencryptedTicket.expireAt!,
                     },
@@ -293,7 +303,6 @@ const EventDetailPage: React.FC = () => {
         try {
             await prepare();
 
-            const u = new user.User();
             const userDetails = await api.userMeGet();
 
             if (
@@ -303,25 +312,70 @@ const EventDetailPage: React.FC = () => {
                 throw new Error('User details are incomplete');
             }
             console.log('User details fetched successfully:', userDetails);
-            const hashedPassword = localStorage.getItem('auth_password');
-            if (!hashedPassword) {
-                throw new Error('Authentication password not found');
+            if (!ticket.data) {
+                throw new Error('Ticket data is missing');
             }
 
-            const decryptedIdentitySecret = decryptValue(
-                userDetails.encryptedIdentitySecret,
-                hashedPassword,
-            );
-            const decryptedInternalNullifier = decryptValue(
-                userDetails.encryptedInternalNullifier,
-                hashedPassword,
-            );
+            let decryptedIdentitySecret = '';
+            let decryptedInternalNullifier = '';
+            let decryptedTicketData = '';
+            let ticketData;
+            if (userDetails.isEncrypted === true) {
+                const hashedPassword = localStorage.getItem('auth_password');
+                if (!hashedPassword) {
+                    throw new Error('Authentication password not found');
+                }
+                decryptedIdentitySecret = decryptValue(
+                    userDetails.encryptedIdentitySecret,
+                    hashedPassword,
+                );
+                decryptedInternalNullifier = decryptValue(
+                    userDetails.encryptedInternalNullifier,
+                    hashedPassword,
+                );
+
+                // Decrypt the ticket data
+                decryptedTicketData = decryptValueUtf8(
+                    ticket.data,
+                    hashedPassword,
+                );
+                console.log('Decrypted ticket data:', decryptedTicketData);
+
+                try {
+                    // Parse the decrypted ticket data, which is a string representation of JSON
+                    ticketData = JSON.parse(decryptedTicketData);
+
+                    // Parse the inner JSON string
+                    ticketData = JSON.parse(ticketData);
+                } catch (error) {
+                    console.error(
+                        'Error parsing decrypted ticket data:',
+                        error,
+                    );
+                    throw new Error('Invalid ticket data format');
+                }
+            } else {
+                decryptedIdentitySecret = userDetails.encryptedIdentitySecret;
+                decryptedInternalNullifier =
+                    userDetails.encryptedInternalNullifier;
+                try {
+                    // Parse the decrypted ticket data, which is a string representation of JSON
+                    ticketData = JSON.parse(ticket.data);
+                } catch (error) {
+                    console.error(
+                        'Error parsing decrypted ticket data:',
+                        error,
+                    );
+                    throw new Error('Invalid ticket data format');
+                }
+            }
 
             console.log('Decrypted Identity Secret:', decryptedIdentitySecret);
             console.log(
                 'Decrypted Internal Nullifier:',
                 decryptedInternalNullifier,
             );
+            console.log('Decrypted ticket data:', ticketData);
 
             let identitySecretBigInt: bigint | undefined;
             let internalNullifierBigInt: bigint | undefined;
@@ -352,6 +406,7 @@ const EventDetailPage: React.FC = () => {
                 domain: 'evm',
             };
 
+            const u = new user.User();
             u.addIdentitySlice(identitySlice);
             console.log(
                 'User set up successfully with decrypted identity slice.',
@@ -362,31 +417,13 @@ const EventDetailPage: React.FC = () => {
                 throw new Error('Failed to get identity commitment');
             }
             console.log('Identity commitment:', identityCommitment.toString());
+            console.log('Ticket credential:', ticket.data);
 
             if (!ticket.data) {
                 throw new Error('Ticket data is missing');
             }
 
             console.log('Raw ticket data before decryption:', ticket.data);
-
-            // Decrypt the ticket data
-            const decryptedTicketData = decryptValueUtf8(
-                ticket.data,
-                hashedPassword,
-            );
-            console.log('Decrypted ticket data:', decryptedTicketData);
-
-            let ticketData;
-            try {
-                // Parse the decrypted ticket data, which is a string representation of JSON
-                ticketData = JSON.parse(decryptedTicketData);
-
-                // Parse the inner JSON string
-                ticketData = JSON.parse(ticketData);
-            } catch (error) {
-                console.error('Error parsing decrypted ticket data:', error);
-                throw new Error('Invalid ticket data format');
-            }
 
             const unitTypeSpec = credType.primitiveTypes.unit;
             const unitType = errors.unwrap(
