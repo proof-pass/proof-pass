@@ -84,15 +84,18 @@ const CredentialsPage: React.FC = () => {
         if (ticket.data) {
             try {
                 const hashedPassword = localStorage.getItem('auth_password');
+                let cred = '';
                 if (!hashedPassword) {
-                    throw new Error('Authentication password not found');
+                    cred = ticket.data;
+                } else {
+                    cred = decryptValueUtf8(ticket.data, hashedPassword);
+                    // encrypted data need to parse twice
+                    cred = JSON.parse(cred);
                 }
-                const decryptedData = decryptValueUtf8(ticket.data, hashedPassword);
-                const parsedData = JSON.parse(decryptedData);
-                const finalData = JSON.parse(parsedData);
+
                 setDisplayedCredentials((prev) => ({
                     ...prev,
-                    [eventId]: finalData,
+                    [eventId]: JSON.parse(cred),
                 }));
             } catch (error) {
                 console.error(
