@@ -61,6 +61,11 @@ func (c *DefaultAPIController) Routes() Routes {
 			"/v1/events/{eventId}",
 			c.EventsEventIdGet,
 		},
+		"EventsEventIdPut": Route{
+			strings.ToUpper("Put"),
+			"/v1/events/{eventId}",
+			c.EventsEventIdPut,
+		},
 		"EventsEventIdRequestTicketCredentialPost": Route{
 			strings.ToUpper("Post"),
 			"/v1/events/{eventId}/request-ticket-credential",
@@ -70,6 +75,11 @@ func (c *DefaultAPIController) Routes() Routes {
 			strings.ToUpper("Get"),
 			"/v1/events",
 			c.EventsGet,
+		},
+		"EventsPost": Route{
+			strings.ToUpper("Post"),
+			"/v1/events",
+			c.EventsPost,
 		},
 		"HealthGet": Route{
 			strings.ToUpper("Get"),
@@ -175,6 +185,39 @@ func (c *DefaultAPIController) EventsEventIdGet(w http.ResponseWriter, r *http.R
 	_ = EncodeJSONResponse(result.Body, &result.Code, w)
 }
 
+// EventsEventIdPut - Update an event
+func (c *DefaultAPIController) EventsEventIdPut(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	eventIdParam := params["eventId"]
+	if eventIdParam == "" {
+		c.errorHandler(w, r, &RequiredError{"eventId"}, nil)
+		return
+	}
+	updateEventRequestParam := UpdateEventRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&updateEventRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertUpdateEventRequestRequired(updateEventRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	if err := AssertUpdateEventRequestConstraints(updateEventRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.EventsEventIdPut(r.Context(), eventIdParam, updateEventRequestParam)
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	_ = EncodeJSONResponse(result.Body, &result.Code, w)
+}
+
 // EventsEventIdRequestTicketCredentialPost - Request a new ticket credential for an event
 func (c *DefaultAPIController) EventsEventIdRequestTicketCredentialPost(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -196,6 +239,33 @@ func (c *DefaultAPIController) EventsEventIdRequestTicketCredentialPost(w http.R
 // EventsGet - Get list of events
 func (c *DefaultAPIController) EventsGet(w http.ResponseWriter, r *http.Request) {
 	result, err := c.service.EventsGet(r.Context())
+	// If an error occurred, encode the error with the status code
+	if err != nil {
+		c.errorHandler(w, r, err, &result)
+		return
+	}
+	// If no error, encode the body and the result code
+	_ = EncodeJSONResponse(result.Body, &result.Code, w)
+}
+
+// EventsPost - Create a new event
+func (c *DefaultAPIController) EventsPost(w http.ResponseWriter, r *http.Request) {
+	createEventRequestParam := CreateEventRequest{}
+	d := json.NewDecoder(r.Body)
+	d.DisallowUnknownFields()
+	if err := d.Decode(&createEventRequestParam); err != nil {
+		c.errorHandler(w, r, &ParsingError{Err: err}, nil)
+		return
+	}
+	if err := AssertCreateEventRequestRequired(createEventRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	if err := AssertCreateEventRequestConstraints(createEventRequestParam); err != nil {
+		c.errorHandler(w, r, err, nil)
+		return
+	}
+	result, err := c.service.EventsPost(r.Context(), createEventRequestParam)
 	// If an error occurred, encode the error with the status code
 	if err != nil {
 		c.errorHandler(w, r, err, &result)

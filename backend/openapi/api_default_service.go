@@ -49,6 +49,17 @@ func (s *DefaultAPIService) EventsEventIdGet(ctx context.Context, eventId string
 	return Response(http.StatusNotImplemented, nil), errors.New("EventsEventIdGet method not implemented")
 }
 
+// EventsEventIdPut - Update an event
+func (s *DefaultAPIService) EventsEventIdPut(ctx context.Context, eventId string, updateEventRequest UpdateEventRequest) (ImplResponse, error) {
+	// TODO - update EventsEventIdPut with the required logic for this service method.
+	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
+
+	// TODO: Uncomment the next line to return response Response(200, Event{}) or use other options such as http.Ok ...
+	// return Response(200, Event{}), nil
+
+	return Response(http.StatusNotImplemented, nil), errors.New("EventsEventIdPut method not implemented")
+}
+
 // EventsEventIdRequestTicketCredentialPost - Request a new ticket credential for an event
 func (s *DefaultAPIService) EventsEventIdRequestTicketCredentialPost(ctx context.Context, eventId string) (ImplResponse, error) {
 	// TODO - update EventsEventIdRequestTicketCredentialPost with the required logic for this service method.
@@ -69,6 +80,17 @@ func (s *DefaultAPIService) EventsGet(ctx context.Context) (ImplResponse, error)
 	// return Response(200, []Event{}), nil
 
 	return Response(http.StatusNotImplemented, nil), errors.New("EventsGet method not implemented")
+}
+
+// EventsPost - Create a new event
+func (s *DefaultAPIService) EventsPost(ctx context.Context, createEventRequest CreateEventRequest) (ImplResponse, error) {
+	// TODO - update EventsPost with the required logic for this service method.
+	// Add api_default_service.go to the .openapi-generator-ignore to avoid overwriting this service implementation when updating open api generation.
+
+	// TODO: Uncomment the next line to return response Response(201, Event{}) or use other options such as http.Ok ...
+	// return Response(201, Event{}), nil
+
+	return Response(http.StatusNotImplemented, nil), errors.New("EventsPost method not implemented")
 }
 
 // HealthGet - Check the health of the API

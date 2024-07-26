@@ -84,6 +84,20 @@ sql:
     rules:
       - sqlc/db-prepare
       - postgresql-query-too-costly
+  - name: event_admins
+    schema: event_admins/schema.sql
+    queries: event_admins/query.sql
+    engine: postgresql
+    gen:
+      go:
+        sql_package: pgx/v5
+        package: event_admins
+        out: event_admins
+    analyzer:
+      database: false
+    rules:
+      - sqlc/db-prepare
+      - postgresql-query-too-costly
 rules:
   - name: postgresql-query-too-costly
     message: "Too costly"

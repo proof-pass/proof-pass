@@ -25,6 +25,7 @@ CREATE TABLE events (
     admin_code VARCHAR NOT NULL,
     chain_id VARCHAR NOT NULL,
     context_id VARCHAR NOT NULL,
+    context_string VARCHAR NOT NULL,
     issuer_key_id VARCHAR NOT NULL,
     start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,
@@ -64,3 +65,12 @@ CREATE TABLE users (
 );
 
 CREATE UNIQUE INDEX idx_users_email ON users(email);
+
+CREATE TABLE event_admins (
+    id SERIAL PRIMARY KEY,
+    event_id VARCHAR NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(event_id, user_id)
+);
+
+CREATE UNIQUE INDEX idx_event_id_user_id ON event_admins(event_id, user_id);

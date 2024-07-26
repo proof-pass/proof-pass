@@ -8,6 +8,7 @@ import (
 	"github.com/proof-pass/proof-pass/backend/repos/registrations"
 	"github.com/proof-pass/proof-pass/backend/repos/ticket_credentials"
 	"github.com/proof-pass/proof-pass/backend/repos/users"
+	"github.com/proof-pass/proof-pass/backend/repos/event_admins"
 )
 
 type Client struct {
@@ -18,6 +19,7 @@ type Client struct {
 	Registrations     *registrations.Queries
 	TicketCredentials *ticket_credentials.Queries
 	Users             *users.Queries
+	EventAdmins	      *event_admins.Queries
 }
 
 func NewClient(pool *pgxpool.Pool) *Client {
@@ -29,5 +31,6 @@ func NewClient(pool *pgxpool.Pool) *Client {
 		Registrations:     registrations.New(pool),
 		TicketCredentials: ticket_credentials.New(pool),
 		Users:             users.New(pool),
+		EventAdmins:       event_admins.New(pool),
 	}
 }
