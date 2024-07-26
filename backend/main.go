@@ -17,6 +17,8 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 type appCfg struct {
@@ -33,6 +35,8 @@ type appCfg struct {
 	JWTSecretKey             string `required:"true"`
 	JWTExpiresSec            int64  `required:"true"`
 	EnableLoginEmail         bool   `required:"true"`
+	EthNodeConn              string `required:"true"`
+	ContextRegistryAddr      string `required:"true"`
 }
 
 func main() {
@@ -76,6 +80,15 @@ func main() {
 	}
 	issuerClient := issuer.NewIssuerServiceClient(issuerConn)
 
+	// initialize Ethereum client
+	ethClient, err := ethclient.Dial(cfg.EthNodeConn)
+	if err != nil {
+		log.Fatal().Msgf("Unable to connect to Ethereum node: %v", err)
+	}
+
+	// initialize the contract
+	contextRegistryAddr := common.HexToAddress(cfg.ContextRegistryAddr)
+
 	// initialize API service
 	apiService := service.NewAPIService(
 		cfg.EmailCredentialContextID,
@@ -85,6 +98,8 @@ func main() {
 		sesClient,
 		jwtService,
 		issuerClient,
+		ethClient,
+		contextRegistryAddr,
 	)
 
 	// create server

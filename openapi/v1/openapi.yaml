@@ -17,6 +17,23 @@ paths:
         "200":
           description: The API is healthy
   /events:
+    post:
+      summary: Create a new event
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "201":
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
     get:
       summary: Get list of events
       responses:
@@ -29,6 +46,29 @@ paths:
                 items:
                   $ref: "#/components/schemas/Event"
   /events/{eventId}:
+    put:
+      summary: Update an event
+      security:
+        - bearerAuth: []
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+      responses:
+        "200":
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
     get:
       summary: Get event details
       parameters:
@@ -226,6 +266,8 @@ components:
           type: string
         context_id:
           type: string
+        context_string:
+          type: string
         issuer_key_id:
           type: string
         start_date:
@@ -371,5 +413,39 @@ components:
           type: string
           format: date-time
         expire_at:
+          type: string
+          format: date-time
+    CreateEventRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        admin_code:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+    UpdateEventRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        admin_code:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
           type: string
           format: date-time

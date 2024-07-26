@@ -7,10 +7,86 @@ package events
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createEvent = `-- name: CreateEvent :one
+INSERT INTO events (
+        id,
+        name,
+        description,
+        url,
+        admin_code,
+        chain_id,
+        context_id,
+        context_string,
+        issuer_key_id,
+        start_date,
+        end_date
+    ) VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10,
+        $11
+    ) RETURNING id, name, description, url, admin_code, chain_id, context_id, context_string, issuer_key_id, start_date, end_date, created_at
+`
+
+type CreateEventParams struct {
+	ID            string
+	Name          string
+	Description   string
+	Url           string
+	AdminCode     string
+	ChainID       string
+	ContextID     string
+	ContextString string
+	IssuerKeyID   string
+	StartDate     pgtype.Timestamptz
+	EndDate       pgtype.Timestamptz
+}
+
+func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event, error) {
+	row := q.db.QueryRow(ctx, createEvent,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.Url,
+		arg.AdminCode,
+		arg.ChainID,
+		arg.ContextID,
+		arg.ContextString,
+		arg.IssuerKeyID,
+		arg.StartDate,
+		arg.EndDate,
+	)
+	var i Event
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Url,
+		&i.AdminCode,
+		&i.ChainID,
+		&i.ContextID,
+		&i.ContextString,
+		&i.IssuerKeyID,
+		&i.StartDate,
+		&i.EndDate,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getEventByID = `-- name: GetEventByID :one
-SELECT id, name, description, url, admin_code, chain_id, context_id, issuer_key_id, start_date, end_date, created_at
+SELECT id, name, description, url, admin_code, chain_id, context_id, context_string, issuer_key_id, start_date, end_date, created_at
 FROM events
 WHERE id = $1
 `
@@ -26,6 +102,7 @@ func (q *Queries) GetEventByID(ctx context.Context, id string) (Event, error) {
 		&i.AdminCode,
 		&i.ChainID,
 		&i.ContextID,
+		&i.ContextString,
 		&i.IssuerKeyID,
 		&i.StartDate,
 		&i.EndDate,
@@ -35,7 +112,7 @@ func (q *Queries) GetEventByID(ctx context.Context, id string) (Event, error) {
 }
 
 const listEvents = `-- name: ListEvents :many
-SELECT id, name, description, url, admin_code, chain_id, context_id, issuer_key_id, start_date, end_date, created_at
+SELECT id, name, description, url, admin_code, chain_id, context_id, context_string, issuer_key_id, start_date, end_date, created_at
 FROM events
 `
 
@@ -56,6 +133,7 @@ func (q *Queries) ListEvents(ctx context.Context) ([]Event, error) {
 			&i.AdminCode,
 			&i.ChainID,
 			&i.ContextID,
+			&i.ContextString,
 			&i.IssuerKeyID,
 			&i.StartDate,
 			&i.EndDate,
@@ -69,4 +147,54 @@ func (q *Queries) ListEvents(ctx context.Context) ([]Event, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateEvent = `-- name: UpdateEvent :one
+UPDATE events SET
+    name = COALESCE($2, name),
+    description = COALESCE($3, description),
+    url = COALESCE($4, url),
+    admin_code = COALESCE($5, admin_code),
+    start_date = COALESCE($6, start_date),
+    end_date = COALESCE($7, end_date)
+WHERE id = $1
+RETURNING id, name, description, url, admin_code, chain_id, context_id, context_string, issuer_key_id, start_date, end_date, created_at
+`
+
+type UpdateEventParams struct {
+	ID          string
+	Name        string
+	Description string
+	Url         string
+	AdminCode   string
+	StartDate   pgtype.Timestamptz
+	EndDate     pgtype.Timestamptz
+}
+
+func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event, error) {
+	row := q.db.QueryRow(ctx, updateEvent,
+		arg.ID,
+		arg.Name,
+		arg.Description,
+		arg.Url,
+		arg.AdminCode,
+		arg.StartDate,
+		arg.EndDate,
+	)
+	var i Event
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Url,
+		&i.AdminCode,
+		&i.ChainID,
+		&i.ContextID,
+		&i.ContextString,
+		&i.IssuerKeyID,
+		&i.StartDate,
+		&i.EndDate,
+		&i.CreatedAt,
+	)
+	return i, err
 }

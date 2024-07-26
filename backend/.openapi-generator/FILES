@@ -7,6 +7,7 @@ openapi/error.go
 openapi/helpers.go
 openapi/impl.go
 openapi/logger.go
+openapi/model_create_event_request.go
 openapi/model_email_credential.go
 openapi/model_event.go
 openapi/model_login_response.go
@@ -16,6 +17,7 @@ openapi/model_record_attendance_request.go
 openapi/model_ticket_credential.go
 openapi/model_unencrypted_email_credential.go
 openapi/model_unencrypted_ticket_credential.go
+openapi/model_update_event_request.go
 openapi/model_user.go
 openapi/model_user_email_verification_request.go
 openapi/model_user_login.go

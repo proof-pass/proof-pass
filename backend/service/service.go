@@ -20,9 +20,14 @@ import (
 	"github.com/proof-pass/proof-pass/backend/repos/registrations"
 	"github.com/proof-pass/proof-pass/backend/repos/ticket_credentials"
 	"github.com/proof-pass/proof-pass/backend/repos/users"
+	"github.com/proof-pass/proof-pass/backend/repos/events"
+    "github.com/proof-pass/proof-pass/backend/repos/event_admins"
 	"github.com/proof-pass/proof-pass/backend/util"
 	"github.com/proof-pass/proof-pass/issuer/api/go/issuer/v1"
 	"github.com/rs/zerolog/log"
+	"github.com/ethereum/go-ethereum/ethclient"
+    "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
 const (
@@ -40,6 +45,9 @@ type APIService struct {
 	sesClient                *ses.Client // null if email login is disabled
 	jwtService               *jwt.Service
 	issuerClient             issuer.IssuerServiceClient
+	issuerKeyID              string
+	ethClient				 *ethclient.Client
+	contextRegistryAddr 	 common.Address
 }
 
 // NewAPIService creates a default api service
@@ -51,6 +59,8 @@ func NewAPIService(
 	sesClient *ses.Client,
 	jwtService *jwt.Service,
 	issuerClient issuer.IssuerServiceClient,
+	ethClient *ethclient.Client,
+	contextRegistryAddr common.Address,
 ) *APIService {
 	return &APIService{
 		emailCredentialContextID: emailCredentialContextID,
@@ -60,6 +70,8 @@ func NewAPIService(
 		sesClient:                sesClient,
 		jwtService:               jwtService,
 		issuerClient:             issuerClient,
+        ethClient:                ethClient,
+		contextRegistryAddr:  	  contextRegistryAddr,
 	}
 }
 
@@ -611,4 +623,154 @@ func (s *APIService) UserMeTicketCredentialsGet(ctx context.Context) (openapi.Im
 	}
 
 	return openapi.Response(http.StatusOK, MarshalTicketCredentials(tcs)), nil
+}
+
+// EventsPost - Create a new event
+func (s *APIService) EventsPost(ctx context.Context, createEventRequest openapi.CreateEventRequest) (openapi.ImplResponse, error) {
+    logger := log.Ctx(ctx).With().Str("op", "EventsPost").Logger()
+    userID := util.GetUserIDFromContext(ctx)
+    userEmail := util.GetUserEmailFromContext(ctx)
+    if userID == "" || userEmail == "" {
+        return openapi.Response(http.StatusUnauthorized, nil), nil
+    }
+	
+	if createEventRequest.Name == "" {
+		return openapi.Response(http.StatusBadRequest, "Name is required"), nil
+	}
+	if createEventRequest.Description == "" {
+		return openapi.Response(http.StatusBadRequest, "Description is required"), nil
+	}
+	if createEventRequest.Url == "" {
+		return openapi.Response(http.StatusBadRequest, "URL is required"), nil
+	}
+	if createEventRequest.StartDate.IsZero() {
+		return openapi.Response(http.StatusBadRequest, "Start date is required"), nil
+	}
+	if createEventRequest.EndDate.IsZero() {
+		return openapi.Response(http.StatusBadRequest, "End date is required"), nil
+	}
+
+	// create a context registry instance
+    contextRegistry, err := NewContextRegistry(s.contextRegistryAddr, s.ethClient)
+    if err != nil {
+        logger.Err(err).Msg("Failed to create ContextRegistry instance")
+        return openapi.Response(http.StatusInternalServerError, nil), err
+    }
+
+	// create a context string in the format of "[proofpass.io][eventName]"
+	contextString := fmt.Sprintf("[%s][%s]", "proofpass.io", createEventRequest.Name)
+
+	// create a context ID using the CalculateContextID function on the contract
+    contextID, err := contextRegistry.CalculateContextID(&bind.CallOpts{}, contextString)
+    if err != nil {
+        logger.Err(err).Msg("Failed to calculate context ID")
+        return openapi.Response(http.StatusInternalServerError, nil), err
+    }
+
+	// hard code chain id as 1 (eth mainnet)
+	// chainID := fmt.Sprintf("%d", s.issuerChainID)
+	chainID := "1"
+
+	// hard code issuer key id for now
+	// issuerKeyID := fmt.Sprintf("%d", s.issuerKeyID)
+	issuerKeyID := "0xc4525dA874A6A3877db65e37f21eEc0b41ef9877"
+
+	// create event
+	event, err := s.dbClient.Events.CreateEvent(ctx, events.CreateEventParams{
+		ID:          uuid.NewString(),
+		Name:        createEventRequest.Name,
+		Description: createEventRequest.Description,
+		Url:         createEventRequest.Url,
+		AdminCode:   createEventRequest.AdminCode,
+		ChainID:     chainID,
+		ContextID:   contextID.String(),
+		ContextString: contextString,
+		IssuerKeyID: issuerKeyID,
+		StartDate:   pgtype.Timestamptz{Time: createEventRequest.StartDate, Valid: true},
+		EndDate:     pgtype.Timestamptz{Time: createEventRequest.EndDate, Valid: true},
+	})
+	if err != nil {
+		logger.Err(err).Msg("Failed to create event")
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+
+	// add the user as an admin to the event_admins table
+	_, err = s.dbClient.EventAdmins.CreateEventAdmin(ctx, event_admins.CreateEventAdminParams{
+		EventID: event.ID,
+		UserID:  userID,
+	})
+	if err != nil {
+		logger.Err(err).Msg("Failed to create event admin")
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+
+	logger.Info().Str("eventID", event.ID).Msg("Created event")
+
+	return openapi.Response(http.StatusCreated, MarshalEvent(event)), nil
+}
+
+// EventsEventIdPut - Update an event
+func (s *APIService) EventsEventIdPut(ctx context.Context, eventId string, updateEventRequest openapi.UpdateEventRequest) (openapi.ImplResponse, error) {
+	logger := log.Ctx(ctx).With().Str("op", "EventsEventIdPut").Logger()
+	userID := util.GetUserIDFromContext(ctx)
+	userEmail := util.GetUserEmailFromContext(ctx)
+	if userID == "" || userEmail == "" {
+		return openapi.Response(http.StatusUnauthorized, nil), nil
+	}
+
+	_, err := s.dbClient.Events.GetEventByID(ctx, eventId)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			logger.Err(err).Msg("Event not found")
+			return openapi.Response(http.StatusNotFound, nil), nil
+		}
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+
+	// check if user is an admin of the event
+	_, err = s.dbClient.EventAdmins.GetEventAdminsByEventId(ctx, eventId)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			logger.Err(err).Msg("User is not an admin of the event")
+			return openapi.Response(http.StatusUnauthorized, nil), nil
+		}
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+
+	// TODO: not sure if we should update the context string
+
+	// preparing partial update params
+	updateEventParams := events.UpdateEventParams{
+		ID:          eventId,
+	}
+	
+	if updateEventRequest.Name != "" {
+		updateEventParams.Name = updateEventRequest.Name
+	}
+	if updateEventRequest.Description != "" {
+		updateEventParams.Description = updateEventRequest.Description
+	}
+	if updateEventRequest.Url != "" {
+		updateEventParams.Url = updateEventRequest.Url
+	}
+	if updateEventRequest.AdminCode != "" {
+		updateEventParams.AdminCode = updateEventRequest.AdminCode
+	}
+	if !updateEventRequest.StartDate.IsZero() {
+		updateEventParams.StartDate = pgtype.Timestamptz{Time: updateEventRequest.StartDate, Valid: true}
+	}
+	if !updateEventRequest.EndDate.IsZero() {
+		updateEventParams.EndDate = pgtype.Timestamptz{Time: updateEventRequest.EndDate, Valid: true}
+	}
+
+	updatedEvent, err := s.dbClient.Events.UpdateEvent(ctx, updateEventParams)
+
+	if err != nil {
+		logger.Err(err).Msg("Failed to update event")
+		return openapi.Response(http.StatusInternalServerError, nil), err
+	}
+
+	logger.Info().Str("eventID", updatedEvent.ID).Msg("Updated event")
+
+	return openapi.Response(http.StatusOK, MarshalEvent(updatedEvent)), nil
 }

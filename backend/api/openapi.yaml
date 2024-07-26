@@ -29,6 +29,23 @@ paths:
                 type: array
           description: List of events
       summary: Get list of events
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+          description: Event created successfully
+      security:
+      - bearerAuth: []
+      summary: Create a new event
   /events/{eventId}:
     get:
       parameters:
@@ -47,6 +64,31 @@ paths:
                 $ref: '#/components/schemas/Event'
           description: Event details
       summary: Get event details
+    put:
+      parameters:
+      - explode: false
+        in: path
+        name: eventId
+        required: true
+        schema:
+          type: string
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEventRequest'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+          description: Event updated successfully
+      security:
+      - bearerAuth: []
+      summary: Update an event
   /events/{eventId}/request-ticket-credential:
     post:
       parameters:
@@ -216,6 +258,7 @@ components:
       example:
         end_date: 2000-01-23T04:56:07.000+00:00
         chain_id: chain_id
+        context_string: context_string
         name: name
         description: description
         context_id: context_id
@@ -235,6 +278,8 @@ components:
         chain_id:
           type: string
         context_id:
+          type: string
+        context_string:
           type: string
         issuer_key_id:
           type: string
@@ -438,6 +483,54 @@ components:
           format: date-time
           type: string
         expire_at:
+          format: date-time
+          type: string
+      type: object
+    CreateEventRequest:
+      example:
+        end_date: 2000-01-23T04:56:07.000+00:00
+        admin_code: admin_code
+        name: name
+        description: description
+        url: url
+        start_date: 2000-01-23T04:56:07.000+00:00
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        admin_code:
+          type: string
+        start_date:
+          format: date-time
+          type: string
+        end_date:
+          format: date-time
+          type: string
+      type: object
+    UpdateEventRequest:
+      example:
+        end_date: 2000-01-23T04:56:07.000+00:00
+        admin_code: admin_code
+        name: name
+        description: description
+        url: url
+        start_date: 2000-01-23T04:56:07.000+00:00
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        url:
+          type: string
+        admin_code:
+          type: string
+        start_date:
+          format: date-time
+          type: string
+        end_date:
           format: date-time
           type: string
       type: object
