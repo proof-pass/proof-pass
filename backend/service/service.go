@@ -35,6 +35,9 @@ const (
 	unitCredentialTypeID            = 1
 	ticketCredentialValidDuration   = time.Hour * 24 * 265
 	emailCredentialValidDuration    = time.Hour * 24 * 14
+	proofPassPrefix = "[proofpass.io]"
+    chainID  = "1" // Default for Ethereum mainnet
+	issuerKeyID = "0xc4525dA874A6A3877db65e37f21eEc0b41ef9877"	// TODO: not sure if we should store this in hex or decimal
 )
 
 type APIService struct {
@@ -45,7 +48,6 @@ type APIService struct {
 	sesClient                *ses.Client // null if email login is disabled
 	jwtService               *jwt.Service
 	issuerClient             issuer.IssuerServiceClient
-	issuerKeyID              string
 	ethClient				 *ethclient.Client
 	contextRegistryAddr 	 common.Address
 }
@@ -657,8 +659,10 @@ func (s *APIService) EventsPost(ctx context.Context, createEventRequest openapi.
         return openapi.Response(http.StatusInternalServerError, nil), err
     }
 
-	// create a context string in the format of "[proofpass.io][eventName]"
-	contextString := fmt.Sprintf("[%s][%s]", "proofpass.io", createEventRequest.Name)
+	eventId := uuid.NewString()
+
+	// create a context string in the format of "[proofpass.io][{event_id}]{event_name}"
+	contextString := fmt.Sprintf("%s[%s]%s", proofPassPrefix, eventId, createEventRequest.Name)
 
 	// create a context ID using the CalculateContextID function on the contract
     contextID, err := contextRegistry.CalculateContextID(&bind.CallOpts{}, contextString)
@@ -667,18 +671,9 @@ func (s *APIService) EventsPost(ctx context.Context, createEventRequest openapi.
         return openapi.Response(http.StatusInternalServerError, nil), err
     }
 
-	// hard code chain id as 1 (eth mainnet)
-	// chainID := fmt.Sprintf("%d", s.issuerChainID)
-	chainID := "1"
-
-	// hard code issuer key id for now
-	// issuerKeyID := fmt.Sprintf("%d", s.issuerKeyID)
-	// TODO: not sure if we should store this in hex or decimal
-	issuerKeyID := "0xc4525dA874A6A3877db65e37f21eEc0b41ef9877"
-
 	// create event
 	event, err := s.dbClient.Events.CreateEvent(ctx, events.CreateEventParams{
-		ID:          uuid.NewString(),
+		ID:          eventId,
 		Name:        createEventRequest.Name,
 		Description: createEventRequest.Description,
 		Url:         createEventRequest.Url,
@@ -732,13 +727,11 @@ func (s *APIService) EventsEventIdPut(ctx context.Context, eventId string, updat
 	_, err = s.dbClient.EventAdmins.GetEventAdminsByEventId(ctx, eventId)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			logger.Err(err).Msg("User is not an admin of the event")
+			logger.Info().Msg("User is not an admin of the event")
 			return openapi.Response(http.StatusUnauthorized, nil), nil
 		}
 		return openapi.Response(http.StatusInternalServerError, nil), err
 	}
-
-	// TODO: not sure if we should update the context string
 
 	// preparing partial update params
 	updateEventParams := events.UpdateEventParams{

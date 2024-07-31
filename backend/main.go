@@ -35,7 +35,7 @@ type appCfg struct {
 	JWTSecretKey             string `required:"true"`
 	JWTExpiresSec            int64  `required:"true"`
 	EnableLoginEmail         bool   `required:"true"`
-	EthNodeConn              string `required:"true"`
+	EthRPCURL              	 string `required:"true"`
 	ContextRegistryAddr      string `required:"true"`
 }
 
@@ -81,12 +81,11 @@ func main() {
 	issuerClient := issuer.NewIssuerServiceClient(issuerConn)
 
 	// initialize Ethereum client
-	ethClient, err := ethclient.Dial(cfg.EthNodeConn)
+	ethClient, err := ethclient.Dial(cfg.EthRPCURL)
 	if err != nil {
 		log.Fatal().Msgf("Unable to connect to Ethereum node: %v", err)
 	}
 
-	// initialize the contract
 	contextRegistryAddr := common.HexToAddress(cfg.ContextRegistryAddr)
 
 	// initialize API service
