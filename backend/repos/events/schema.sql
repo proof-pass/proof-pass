@@ -6,6 +6,7 @@ CREATE TABLE events (
     admin_code VARCHAR NOT NULL,
     chain_id VARCHAR NOT NULL,
     context_id VARCHAR NOT NULL,
+    context_string VARCHAR NOT NULL,
     issuer_key_id VARCHAR NOT NULL,
     start_date TIMESTAMPTZ NOT NULL,
     end_date TIMESTAMPTZ NOT NULL,

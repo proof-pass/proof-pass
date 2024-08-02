@@ -23,8 +23,10 @@ import (
 type DefaultAPIRouter interface { 
 	EventsEventIdAttendancePost(http.ResponseWriter, *http.Request)
 	EventsEventIdGet(http.ResponseWriter, *http.Request)
+	EventsEventIdPut(http.ResponseWriter, *http.Request)
 	EventsEventIdRequestTicketCredentialPost(http.ResponseWriter, *http.Request)
 	EventsGet(http.ResponseWriter, *http.Request)
+	EventsPost(http.ResponseWriter, *http.Request)
 	HealthGet(http.ResponseWriter, *http.Request)
 	UserLoginPost(http.ResponseWriter, *http.Request)
 	UserMeEmailCredentialGet(http.ResponseWriter, *http.Request)
@@ -45,8 +47,10 @@ type DefaultAPIRouter interface {
 type DefaultAPIServicer interface { 
 	EventsEventIdAttendancePost(context.Context, string, RecordAttendanceRequest) (ImplResponse, error)
 	EventsEventIdGet(context.Context, string) (ImplResponse, error)
+	EventsEventIdPut(context.Context, string, UpdateEventRequest) (ImplResponse, error)
 	EventsEventIdRequestTicketCredentialPost(context.Context, string) (ImplResponse, error)
 	EventsGet(context.Context) (ImplResponse, error)
+	EventsPost(context.Context, CreateEventRequest) (ImplResponse, error)
 	HealthGet(context.Context) (ImplResponse, error)
 	UserLoginPost(context.Context, UserLogin) (ImplResponse, error)
 	UserMeEmailCredentialGet(context.Context) (ImplResponse, error)

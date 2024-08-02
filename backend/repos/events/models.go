@@ -9,15 +9,16 @@ import (
 )
 
 type Event struct {
-	ID          string
-	Name        string
-	Description string
-	Url         string
-	AdminCode   string
-	ChainID     string
-	ContextID   string
-	IssuerKeyID string
-	StartDate   pgtype.Timestamptz
-	EndDate     pgtype.Timestamptz
-	CreatedAt   pgtype.Timestamptz
+	ID            string
+	Name          string
+	Description   string
+	Url           string
+	AdminCode     string
+	ChainID       string
+	ContextID     string
+	ContextString string
+	IssuerKeyID   string
+	StartDate     pgtype.Timestamptz
+	EndDate       pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamptz
 }
