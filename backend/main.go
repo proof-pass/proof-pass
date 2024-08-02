@@ -37,6 +37,7 @@ type appCfg struct {
 	EnableLoginEmail         bool   `required:"true"`
 	EthRPCURL              	 string `required:"true"`
 	ContextRegistryAddr      string `required:"true"`
+	IssuerID 			     string `required:"true"`
 }
 
 func main() {
@@ -99,6 +100,7 @@ func main() {
 		issuerClient,
 		ethClient,
 		contextRegistryAddr,
+		cfg.IssuerID,
 	)
 
 	// create server

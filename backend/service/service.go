@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/mail"
 	"time"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/service/ses"
 	"github.com/go-redis/redis/v8"
@@ -36,7 +37,7 @@ const (
 	ticketCredentialValidDuration   = time.Hour * 24 * 265
 	emailCredentialValidDuration    = time.Hour * 24 * 14
 	proofPassPrefix = "[proofpass.io]"
-    chainID  = "1" // Default for Ethereum mainnet
+    chainID  = "" // Testnet: 11155111; Ethereum mainnet: 1
 	issuerKeyID = "0xc4525dA874A6A3877db65e37f21eEc0b41ef9877"	// TODO: not sure if we should store this in hex or decimal
 )
 
@@ -50,6 +51,7 @@ type APIService struct {
 	issuerClient             issuer.IssuerServiceClient
 	ethClient				 *ethclient.Client
 	contextRegistryAddr 	 common.Address
+	issuerKeyID 			 string
 }
 
 // NewAPIService creates a default api service
@@ -63,6 +65,7 @@ func NewAPIService(
 	issuerClient issuer.IssuerServiceClient,
 	ethClient *ethclient.Client,
 	contextRegistryAddr common.Address,
+	issuerKeyID string,
 ) *APIService {
 	return &APIService{
 		emailCredentialContextID: emailCredentialContextID,
@@ -74,6 +77,7 @@ func NewAPIService(
 		issuerClient:             issuerClient,
         ethClient:                ethClient,
 		contextRegistryAddr:  	  contextRegistryAddr,
+		issuerKeyID: 			  issuerKeyID,
 	}
 }
 
@@ -678,10 +682,10 @@ func (s *APIService) EventsPost(ctx context.Context, createEventRequest openapi.
 		Description: createEventRequest.Description,
 		Url:         createEventRequest.Url,
 		AdminCode:   createEventRequest.AdminCode,
-		ChainID:     chainID,
+		ChainID:     strconv.FormatInt(s.issuerChainID, 10),
 		ContextID:   contextID.String(),
 		ContextString: contextString,
-		IssuerKeyID: issuerKeyID,
+		IssuerKeyID: s.issuerKeyID,
 		StartDate:   pgtype.Timestamptz{Time: createEventRequest.StartDate, Valid: true},
 		EndDate:     pgtype.Timestamptz{Time: createEventRequest.EndDate, Valid: true},
 	})
