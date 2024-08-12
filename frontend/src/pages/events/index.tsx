@@ -113,25 +113,37 @@ const EventsPage: React.FC = () => {
                 </PlanetOverlay>
             </Header>
             {errorMessage && <ErrorMessage>{errorMessage}</ErrorMessage>}
-            <EventList>
-                {isLoading ? (
-                    <LoadingIndicator>Loading events...</LoadingIndicator>
-                ) : eventList.length > 0 ? (
-                    eventList.map((event) => (
-                        <EventCard
-                            key={event.id}
-                            eventName={event.name ?? ''}
-                            eventStartDate="July 8, 2024"
-                            eventEndDate="July 11, 2024"
-                            eventDescription={formatDescription(
-                                event.description ?? ''
-                            )}
-                            onClick={() => handleEventClick(event.id ?? '')} eventId={''} eventUrl={''}                        />
-                    ))
-                ) : (
-                    <NoEventsMessage>No events available.</NoEventsMessage>
-                )}
-            </EventList>
+            <EventListContainer>
+                <ScrollableEventList>
+                    {isLoading ? (
+                        <LoadingIndicator>Loading events...</LoadingIndicator>
+                    ) : eventList.length > 0 ? (
+                        eventList.map((event) => (
+                            <EventCard
+                                key={event.id}
+                                eventName={event.name ?? ''}
+                                eventStartDate={event.startDate?.toDateString() ?? ''}
+                                eventEndDate={event.endDate?.toDateString() ?? ''}
+                                eventDescription={formatDescription(
+                                    event.description ?? ''
+                                )}
+                                onClick={() => handleEventClick(event.id ?? '')} 
+                                eventId={''}
+                                eventUrl={''}                        
+                            />
+                        ))
+                    ) : (
+                        <NoEventsMessage>No events available.</NoEventsMessage>
+                    )}
+                </ScrollableEventList>
+            </EventListContainer>
+            <ButtonContainer>
+                <AddEventsButton
+                    onClick={() => router.push('/events/addEvents')}
+                >
+                    Add Event
+                </AddEventsButton>
+            </ButtonContainer>
             <SVGIconSpace>
                 <Image
                     src="/proof-summer-icon.svg"
@@ -144,11 +156,29 @@ const EventsPage: React.FC = () => {
     );
 };
 
+const ButtonContainer = styled.div`
+    padding: 0 20px;
+    margin-top: auto;
+    margin-bottom: 20px;
+`;
+
+const AddEventsButton = styled.button`
+    background-color: #ff8151;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 15px 32px;
+    width: 100%;
+`;
+
 const MainContainer = styled.div`
     background-color: #fff;
     color: #000;
     max-width: 480px;
-    min-height: 100vh;
+    height: 100vh;
     margin: 0 auto;
     padding: 0;
     font-family: 'Inter', sans-serif;
@@ -211,6 +241,34 @@ const PlanetOverlay = styled.div`
     }
 `;
 
+const EventListContainer = styled.div`
+    flex: 1;
+    overflow: hidden;
+    padding: 20px;
+`;
+
+const ScrollableEventList = styled.div`
+    height: 100%;
+    overflow-y: auto;
+    
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    &::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 3px;
+    }
+    
+    &::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+`;
+
 const EventList = styled.div`
     display: flex;
     flex-direction: column;
@@ -244,7 +302,6 @@ const NoEventsMessage = styled.div`
 const SVGIconSpace = styled.div`
     display: flex;
     justify-content: center;
-    margin-top: auto;
     padding: 20px;
 `;
 
