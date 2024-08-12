@@ -87,7 +87,6 @@ const CheckInPage: React.FC = () => {
                 });
 
                 const expectedTypeID = credType.primitiveTypes.unit.type_id;
-                console.log(event!.contextId!);
                 const expectedContextID = BigInt(event!.contextId!);
                 const expectedIssuerID = BigInt(event!.issuerKeyId!);
 
@@ -104,7 +103,11 @@ const CheckInPage: React.FC = () => {
                     return 'Invalid proof: Context ID not found';
                 }
 
-                if (actualContextID !== expectedContextID) {
+                console.log('Expected Context ID:', expectedContextID.toString());
+                console.log('Actual Context ID:', actualContextID.toString());
+
+                if (actualContextID.toString() !== expectedContextID.toString()) {
+                    console.log('Context ID mismatch');
                     return 'This ticket is for a different event. Please check and try again.';
                 }
 
@@ -119,14 +122,18 @@ const CheckInPage: React.FC = () => {
                     proof,
                 );
 
+                console.log('Verification Result Raw:', result);
+
                 console.log(
                     'Verification Result:',
                     evm.verifyResultToString(result),
                 );
 
-                return result === evm.VerifyResult.OK
-                    ? true
-                    : 'Verification failed';
+                if (result === evm.VerifyResult.OK) {
+                    return true;
+                } else {
+                    return `Verification failed`;
+                }
             } catch (error) {
                 console.error('Error in verifyProof:', error);
                 return 'Failed to verify the proof. Please try again.';
@@ -218,11 +225,16 @@ const CheckInPage: React.FC = () => {
                 const proof: babyzkTypes.WholeProof = JSON.parse(decodedText);
                 const verificationResult = await verifyProof(proof);
 
-                if (verificationResult) {
+                if (verificationResult === true) {
                     if (isHostLoggedIn) {
-                        await recordAttendance(event.id!, proof, adminCode);
-                        setPopupMessage('Verified, attendance recorded!');
-                        setPopupSuccess(true);
+                        const recordResult = await recordAttendance(event.id!, proof, adminCode);
+                        if (recordResult === true) {
+                            setPopupMessage('Verified, attendance recorded!');
+                            setPopupSuccess(true);
+                        } else {
+                            setPopupMessage(recordResult);
+                            setPopupSuccess(false);
+                        }
                     } else {
                         setPopupMessage('Verified!');
                         setPopupSuccess(true);
@@ -232,23 +244,13 @@ const CheckInPage: React.FC = () => {
                     setPopupSuccess(false);
                 }
                 setShowPopup(true);
-            } catch (error: unknown) {
+            }  catch (error: unknown) {
                 console.error('Error verifying proof:', error);
-
+    
                 if (error instanceof Error) {
-                    if (error.message.includes('Context ID mismatch')) {
-                        setPopupMessage(
-                            'This ticket is for a different event. Please check and try again.',
-                        );
-                    } else {
-                        setPopupMessage(
-                            'Failed to verify the QR code. Please try again.',
-                        );
-                    }
+                    setPopupMessage(error.message);
                 } else {
-                    setPopupMessage(
-                        'An unexpected error occurred. Please try again.',
-                    );
+                    setPopupMessage('An unexpected error occurred. Please try again.');
                 }
                 setPopupSuccess(false);
                 setShowPopup(true);

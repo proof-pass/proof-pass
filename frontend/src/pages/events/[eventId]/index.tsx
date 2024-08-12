@@ -327,6 +327,7 @@ const EventDetailPage: React.FC = () => {
             let ticketData;
             if (userDetails.isEncrypted === true) {
                 const hashedPassword = localStorage.getItem('auth_password');
+                console.log('Hashed password', hashedPassword);
                 if (!hashedPassword) {
                     throw new Error('Authentication password not found');
                 }
@@ -375,12 +376,12 @@ const EventDetailPage: React.FC = () => {
                 }
             }
 
-            console.log('Decrypted Identity Secret:', decryptedIdentitySecret);
+            console.log('Decrypted Identity Secret as hex:', decryptedIdentitySecret);
             console.log(
                 'Decrypted Internal Nullifier:',
                 decryptedInternalNullifier,
             );
-            console.log('Decrypted ticket data:', ticketData);
+            console.log('Decrypted ticket data as hex:', ticketData);
 
             let identitySecretBigInt: bigint | undefined;
             let internalNullifierBigInt: bigint | undefined;
@@ -404,6 +405,9 @@ const EventDetailPage: React.FC = () => {
                 );
                 throw new Error('Decrypted values are not valid numbers');
             }
+
+            console.log('identitySecretBigInt after decryption', identitySecretBigInt);
+            console.log('internalNullifierBigInt after decryption', internalNullifierBigInt);
 
             const identitySlice: user.IdentitySlice = {
                 identitySecret: identitySecretBigInt,
@@ -461,7 +465,9 @@ const EventDetailPage: React.FC = () => {
 
             const externalNullifier =
                 utils.computeExternalNullifier(contextString);
-            const expiredAtLowerBound = BigInt(1720663600); // TODO: simon: set this to the event end time + 1 day
+            const eventEndDate = event!.endDate!.getTime();
+            // Set the expiration date to 24 hours after the event end date
+            const expiredAtLowerBound = BigInt(eventEndDate + 86400000);
 
             const equalCheckId = BigInt(0);
             const pseudonym = BigInt(0);
@@ -599,7 +605,7 @@ const EventDetailPage: React.FC = () => {
                         <Separator />
                         <EventInfoRow>
                             <EventDate>
-                                Start: July 8, 2024 - End: July 11, 2024
+                                {event.startDate?.toDateString() ?? ''} - {event.endDate?.toDateString() ?? ''}
                             </EventDate>
                             <EventLinkContainer>
                                 <EventLink
