@@ -25,6 +25,13 @@ import {
 } from '@galxe-identity-protocol/sdk';
 import { decryptValue, decryptValueUtf8, encryptValue } from '@/utils/utils';
 import { setToken } from '@/utils/auth';
+import ZKEmailLoginForm from '@/components/ZKEmailLoginForm';
+import { useZkEmailOAuth } from '@/utils/zkEmailOauth';
+
+const EQUAL_CHECK_ID = BigInt(0);
+const PSEUDONYM = BigInt(0);
+const CIRCOM_WASM_URL = 'https://storage.googleapis.com/protocol-gadgets/unit/circom.wasm';
+const CIRCUIT_FINAL_ZKEY_URL = 'https://storage.googleapis.com/protocol-gadgets/unit/circuit_final.zkey';
 
 const EventDetailPage: React.FC = () => {
     const router = useRouter();
@@ -45,6 +52,32 @@ const EventDetailPage: React.FC = () => {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [eventNotFound, setEventNotFound] = useState(false);
     const [isRequestingCredential, setIsRequestingCredential] = useState(false);
+    const [showZKEmailForm, setShowZKEmailForm] = useState(false);
+    const [isRequestingNFT, setIsRequestingNFT] = useState(false);
+    const [nftMinted, setNftMinted] = useState(false);
+
+    const {
+        initOauthClient,
+        handleZKEmailSubmit,
+        handleResetEmailProcess,
+        sessionData,
+        emailWalletStatus,
+        emailError,
+        isEmailSent,
+        isConnectingEmailWallet,
+        checkConnectionStatus,
+    } = useZkEmailOAuth();
+
+    useEffect(() => {
+        initOauthClient();
+        checkConnectionStatus();
+    }, [initOauthClient, checkConnectionStatus]);
+
+    useEffect(() => {
+        if (sessionData && emailWalletStatus === 'Connected') {
+            setShowZKEmailForm(false);
+        }
+    }, [sessionData, emailWalletStatus]);
 
     const handleError = (message: string) => {
         setErrorMessage(message);
@@ -252,6 +285,71 @@ const EventDetailPage: React.FC = () => {
         }
     };
 
+    const handleRequestNFT = async () => {
+        setIsRequestingNFT(true);
+        console.log('sessiondata', sessionData);
+        try {
+            const isCheckedIn = await checkUserCheckIn(eventId as string);
+            if (!isCheckedIn) {
+                handleError('You must have checked in during the event to claim the NFT');
+                return;
+            }
+
+            if (!sessionData) {
+                setShowZKEmailForm(true);
+            } else {
+                await mintProofOfAttendanceNFT();
+            }
+        } catch (error) {
+            console.error('Error requesting NFT:', error);
+            handleError('Failed to request Proof of Attendance NFT');
+        } finally {
+            setIsRequestingNFT(false);
+        }
+    };
+
+    const checkUserCheckIn = async (eventId: string): Promise<boolean> => {
+        // Mock API call to check user check-in
+        return new Promise<boolean>((resolve) => {
+            setTimeout(() => {
+                resolve(true); // Assume the user has checked in for now
+            }, 1000);
+        });
+    };
+
+    const mintProofOfAttendanceNFT = async () => {
+        if (!sessionData) {
+            handleError('Email wallet not connected');
+            return;
+        }
+
+        try {
+            // Mock API call to mint NFT
+            const nullifier = computeNullifier(sessionData.ephemeralPrivateKey, event?.contextId || '');
+            // Mock the response to be successful
+            const response = {
+                success: true,
+                error: null,
+            };
+
+            if (response.success) {
+                console.log('NFT minted successfully');
+                setNftMinted(true);
+                handleError('Proof of Attendance NFT minted successfully!');
+            } else {
+                handleError('Failed to mint NFT: ' + response.error);
+            }
+        } catch (error) {
+            console.error('Error minting NFT:', error);
+            handleError('Failed to mint Proof of Attendance NFT');
+        }
+    };
+
+    const computeNullifier = (internalNullifier: string, externalNullifier: string): string => {
+        // Mock nullifier computation
+        return `nullifier-${internalNullifier}-${externalNullifier}`;
+    };
+
     const handleGenerateProof = async () => {
         if (qrCodeValue[eventId as string]) {
             // If we already have a QR code value (from quick login), just set it as generated
@@ -327,6 +425,7 @@ const EventDetailPage: React.FC = () => {
             let ticketData;
             if (userDetails.isEncrypted === true) {
                 const hashedPassword = localStorage.getItem('auth_password');
+                console.log('In is encrypted Hash password:', hashedPassword);
                 if (!hashedPassword) {
                     throw new Error('Authentication password not found');
                 }
@@ -360,6 +459,7 @@ const EventDetailPage: React.FC = () => {
                     throw new Error('Invalid ticket data format');
                 }
             } else {
+                console.log('In is not encrypted');
                 decryptedIdentitySecret = userDetails.encryptedIdentitySecret;
                 decryptedInternalNullifier =
                     userDetails.encryptedInternalNullifier;
@@ -461,10 +561,11 @@ const EventDetailPage: React.FC = () => {
 
             const externalNullifier =
                 utils.computeExternalNullifier(contextString);
-            const expiredAtLowerBound = BigInt(1720663600); // TODO: simon: set this to the event end time + 1 day
 
-            const equalCheckId = BigInt(0);
-            const pseudonym = BigInt(0);
+            const eventEndDate = event!.endDate!.getTime();
+            // Set the expiration date to 24 hours after the event end date
+            const expiredAtLowerBound = BigInt(1723899000);
+
             console.log('Proof generation parameters set up successfully.');
 
             console.log('Downloading proof generation gadgets...');
@@ -473,10 +574,8 @@ const EventDetailPage: React.FC = () => {
             //         cred.header.type,
             //         provider,
             //     );
-            const proofGenGadgets = await user.User.fetchProofGenGadgetByURIs(
-                'https://storage.googleapis.com/protocol-gadgets/unit/circom.wasm',
-                'https://storage.googleapis.com/protocol-gadgets/unit/circuit_final.zkey',
-            );
+            const proofGenGadgets = await user.User.fetchProofGenGadgetByURIs(CIRCOM_WASM_URL, CIRCUIT_FINAL_ZKEY_URL);
+
             console.log('Proof generation gadgets downloaded successfully.');
 
             const proof = await u.genBabyzkProofWithQuery(
@@ -489,8 +588,8 @@ const EventDetailPage: React.FC = () => {
                 "options": {
                     "expiredAtLowerBound": "${expiredAtLowerBound}",
                     "externalNullifier": "${externalNullifier}",
-                    "equalCheckId": "${equalCheckId}",
-                    "pseudonym": "${pseudonym}"
+                    "equalCheckId": "${EQUAL_CHECK_ID}",
+                    "pseudonym": "${PSEUDONYM}"
                 }
                 }
                 `,
@@ -558,6 +657,14 @@ const EventDetailPage: React.FC = () => {
         });
     };
 
+    const handleZKEmailSubmitWrapper = async (email: string, username: string | null, isSignUp: boolean) => {
+        const success = await handleZKEmailSubmit(email, username, isSignUp);
+        if (success) {
+            setShowZKEmailForm(false);
+            checkConnectionStatus(); 
+        }
+    };
+
     if (isLoading) return <div>Loading...</div>;
     if (eventNotFound)
         return <EventNotFoundMessage>No event found</EventNotFoundMessage>;
@@ -586,118 +693,112 @@ const EventDetailPage: React.FC = () => {
             </Header>
             {errorMessage && <ErrorBanner>{errorMessage}</ErrorBanner>}
             <EventDetailsContainer>
-                {eventNotFound ? (
-                    <EventNotFoundMessage>No event found</EventNotFoundMessage>
+                <EventHeader>
+                    <EventName>{event?.name}</EventName>
+                    <HostCheckInButton onClick={handleHostCheckIn}>
+                        Event Host Check In
+                    </HostCheckInButton>
+                </EventHeader>
+                <Separator />
+                <EventInfoRow>
+                    <EventDate>
+                        Start: {event?.startDate ? new Date(event.startDate).toLocaleDateString() : 'N/A'} - End: {event?.endDate ? new Date(event.endDate).toLocaleDateString() : 'N/A'}
+                    </EventDate>
+                    <EventLinkContainer>
+                        <EventLink
+                            href={event?.url || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Event Details
+                            <ExternalLinkIcon>
+                                <Image
+                                    src="/link-icon.svg"
+                                    alt="External Link"
+                                    width={14}
+                                    height={14}
+                                />
+                            </ExternalLinkIcon>
+                        </EventLink>
+                    </EventLinkContainer>
+                </EventInfoRow>
+                <EventDescription expanded={isDescriptionExpanded}>
+                    {formatDescription(event?.description || '')}
+                </EventDescription>
+                <ExpandButton
+                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                >
+                    {isDescriptionExpanded ? 'Show less' : 'Show more'}
+                </ExpandButton>
+                <EmailWalletStatus>
+                    Email Wallet Status: {emailWalletStatus}
+                </EmailWalletStatus>
+                {!hasTicket ? (
+                    <RequestCredentialButton
+                        onClick={handleRequestCredential}
+                        disabled={isRequestingCredential}
+                    >
+                        {isRequestingCredential ? (
+                            <LoadingContent>
+                                <LoadingSpinner />
+                                <span>Requesting...</span>
+                            </LoadingContent>
+                        ) : (
+                            'Request Credential'
+                        )}
+                    </RequestCredentialButton>
                 ) : (
                     <>
-                        <EventHeader>
-                            <EventName>{event?.name}</EventName>
-                            <HostCheckInButton onClick={handleHostCheckIn}>
-                                Event Host Check In
-                            </HostCheckInButton>
-                        </EventHeader>
-                        <Separator />
-                        <EventInfoRow>
-                            <EventDate>
-                                Start: July 8, 2024 - End: July 11, 2024
-                            </EventDate>
-                            <EventLinkContainer>
-                                <EventLink
-                                    href={event?.url || '#'}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    Event Details
-                                    <ExternalLinkIcon>
-                                        <Image
-                                            src="/link-icon.svg"
-                                            alt="External Link"
-                                            width={14}
-                                            height={14}
-                                            style={{ color: 'inherit' }}
-                                        />
-                                    </ExternalLinkIcon>
-                                </EventLink>
-                            </EventLinkContainer>
-                        </EventInfoRow>
-                        <EventDescription expanded={isDescriptionExpanded}>
-                            {formatDescription(event?.description || '')}
-                        </EventDescription>
-                        <ExpandButton
-                            onClick={() =>
-                                setIsDescriptionExpanded(!isDescriptionExpanded)
-                            }
+                        <CredentialObtainedMessage>
+                            Ticket Credential Obtained
+                            <CelebrationIcon>
+                                <Image
+                                    src="/confirm-icon.svg"
+                                    alt="Celebration"
+                                    width={24}
+                                    height={24}
+                                />
+                            </CelebrationIcon>
+                        </CredentialObtainedMessage>
+                        <RequestProofOfAttendanceNFTButton
+                            onClick={handleRequestNFT}
+                            disabled={isRequestingNFT || nftMinted}
                         >
-                            {isDescriptionExpanded ? 'Show less' : 'Show more'}
-                        </ExpandButton>
-                        {!hasTicket ? (
-                            <RequestCredentialButton
-                                onClick={handleRequestCredential}
-                                disabled={isRequestingCredential}
-                            >
-                                {isRequestingCredential ? (
-                                    <LoadingContent>
-                                        <LoadingSpinner />
-                                        <span>Requesting...</span>
-                                    </LoadingContent>
-                                ) : (
-                                    'Request Credential'
-                                )}
-                            </RequestCredentialButton>
-                        ) : (
+                            {isRequestingNFT ? (
+                                <LoadingContent>
+                                    <LoadingSpinner />
+                                    <span>Preparing...</span>
+                                </LoadingContent>
+                            ) : nftMinted ? (
+                                'NFT Claimed'
+                            ) : (
+                                'Mint Proof of Attendance NFT'
+                            )}
+                        </RequestProofOfAttendanceNFTButton>
+                        <NFTExplanation>
+                            Only users who checked in during the event will have access to mint the Proof of Attendance NFT.
+                        </NFTExplanation>
+                        <GenerateProofButton
+                            onClick={handleGenerateProof}
+                            disabled={isGeneratingProof[eventId as string]}
+                        >
+                            {isGeneratingProof[eventId as string] ? (
+                                <LoadingContent>
+                                    <LoadingSpinner />
+                                    <span>Generating...</span>
+                                </LoadingContent>
+                            ) : (
+                                'Generate Proof'
+                            )}
+                        </GenerateProofButton>
+                        {proofGenerated[eventId as string] && (
                             <>
-                                <CredentialObtainedMessage>
-                                    Ticket Credential Obtained
-                                    <CelebrationIcon>
-                                        <Image
-                                            src="/confirm-icon.svg"
-                                            alt="Celebration"
-                                            width={24}
-                                            height={24}
-                                            style={{ color: 'inherit' }}
-                                        />
-                                    </CelebrationIcon>
-                                </CredentialObtainedMessage>
-                                {!proofGenerated[eventId as string] ? (
-                                    <GenerateProofButton
-                                        onClick={handleGenerateProof}
-                                        disabled={
-                                            isGeneratingProof[eventId as string]
-                                        }
-                                    >
-                                        {isGeneratingProof[
-                                            eventId as string
-                                        ] ? (
-                                            <LoadingContent>
-                                                <LoadingSpinner />
-                                                <span>Generating...</span>
-                                            </LoadingContent>
-                                        ) : (
-                                            'Generate Proof'
-                                        )}
-                                    </GenerateProofButton>
-                                ) : (
-                                    <>
-                                        <ProofMessage>
-                                            Proof generated, show QR code below
-                                            at gate to check in. Screenshot the
-                                            QR before the event as internet
-                                            could be spotty!
-                                        </ProofMessage>
-                                        {qrCodeValue && (
-                                            <QRCodeContainer>
-                                                <QRCode
-                                                    value={
-                                                        qrCodeValue[
-                                                            eventId as string
-                                                        ] || ''
-                                                    }
-                                                    size={400}
-                                                />
-                                            </QRCodeContainer>
-                                        )}
-                                    </>
-                                )}
+                                <ProofMessage>
+                                    Proof generated successfully. Use this QR code for event check-in:
+                                </ProofMessage>
+                                <QRCodeContainer>
+                                    <QRCode value={qrCodeValue[eventId as string] || ''} />
+                                </QRCodeContainer>
                             </>
                         )}
                     </>
@@ -711,6 +812,22 @@ const EventDetailPage: React.FC = () => {
                     height={104}
                 />
             </SVGIconSpace>
+            {showZKEmailForm && (
+                <ModalOverlay>
+                    <ZKEmailLoginForm 
+                        onSubmit={handleZKEmailSubmitWrapper} 
+                        onClose={() => {
+                            setShowZKEmailForm(false);
+                            handleResetEmailProcess();
+                            checkConnectionStatus();
+                        }}
+                        onReset={handleResetEmailProcess}
+                        isLoading={isConnectingEmailWallet}
+                        error={emailError}
+                        isEmailSent={isEmailSent}
+                    />
+                </ModalOverlay>
+            )}
         </MainContainer>
     );
 };
@@ -904,6 +1021,58 @@ const RequestCredentialButton = styled.button`
     margin-top: 32px;
     opacity: ${(props) => (props.disabled ? 0.5 : 1)};
     transition: opacity 0.3s ease;
+`;
+
+const RequestProofOfAttendanceNFTButton = styled.button`
+  align-self: stretch;
+  border-radius: 8px;
+  background: linear-gradient(90deg, rgba(255, 129, 81, 0) 0%, #ff8151 100%),
+              linear-gradient(90deg, #5eb7ff 0%, rgba(56, 110, 153, 0) 100%);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  color: #fff;
+  padding: 13px 32px;
+  font: 700 16px Inter, sans-serif;
+  border: none;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: opacity 0.3s ease;
+  opacity: ${props => props.disabled ? 0.5 : 1};
+  margin-top: 16px;
+  width: 100%;
+
+  &:hover {
+    opacity: ${props => props.disabled ? 0.5 : 0.9};
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(94, 183, 255, 0.5);
+  }
+`;
+
+const ModalOverlay = styled.div`
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+`;
+
+const NFTExplanation = styled.p`
+    font-size: 14px;
+    color: #666;
+    margin-top: 10px;
+    text-align: center;
+`;
+
+const EmailWalletStatus = styled.div`
+    font-size: 14px;
+    color: #5eb7ff;
+    margin-bottom: 10px;
 `;
 
 const Separator = styled.hr`

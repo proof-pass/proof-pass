@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/proof-pass/proof-pass/issuer/api/go v0.0.0-20240628002537-1990e549bc2a
+	github.com/proof-pass/proof-pass/issuer/api/go v0.0.0-20240710064740-82ca4c9f38c1
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.9.0
 	google.golang.org/grpc v1.64.0
