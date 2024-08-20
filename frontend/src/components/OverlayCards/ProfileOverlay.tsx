@@ -22,7 +22,8 @@ const ProfileOverlay: React.FC<ProfileOverlayProps> = ({
 
     const handleLogout = useCallback(() => {
         removeToken();
-        localStorage.removeItem('auth_password');
+        // clear local storage
+        localStorage.clear();
         router.push('/');
     }, [router]);
 
